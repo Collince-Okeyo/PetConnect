@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+/* Base resets for full-height layouts */
+html, body, #root { height: 100%; }
