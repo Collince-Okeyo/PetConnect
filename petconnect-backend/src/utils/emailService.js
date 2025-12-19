@@ -1,18 +1,17 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const crypto = require('crypto');
 
-// Create reusable transporter
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
-    }
-  });
-};
+// Check if we have an API key
+const hasApiKey = !!process.env.RESEND_API_KEY;
+
+// Initialize Resend only if API key is available
+let resend = null;
+if (hasApiKey) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+  console.log('✅ Resend email service initialized');
+} else {
+  console.log('⚠️  Resend API key not found - running in development mode (emails will be logged to console)');
+}
 
 // Generate OTP
 const generateOTP = () => {
@@ -22,11 +21,18 @@ const generateOTP = () => {
 // Send email verification OTP
 const sendVerificationEmail = async (email, name, otp) => {
   try {
-    const transporter = createTransporter();
-    
-    const mailOptions = {
-      from: `"PetConnect" <${process.env.EMAIL_USER}>`,
-      to: email,
+    if (!hasApiKey) {
+      console.log('\n📧 EMAIL OTP (Development Mode):');
+      console.log(`To: ${email}`);
+      console.log(`Name: ${name}`);
+      console.log(`OTP: ${otp}`);
+      console.log('---\n');
+      return { success: true, message: 'Email OTP logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [email],
       subject: 'PetConnect Email Verification',
       html: `
         <!DOCTYPE html>
@@ -40,7 +46,6 @@ const sendVerificationEmail = async (email, name, otp) => {
             .otp-box { background: white; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }
             .otp-code { font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }
             .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
           </style>
         </head>
         <body>
@@ -71,10 +76,15 @@ const sendVerificationEmail = async (email, name, otp) => {
         </body>
         </html>
       `
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    return { success: true, message: 'Verification email sent successfully' };
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send verification email', error: error.message };
+    }
+
+    console.log('✅ Email sent successfully:', data);
+    return { success: true, message: 'Verification email sent successfully', data };
   } catch (error) {
     console.error('Email sending error:', error);
     return { success: false, message: 'Failed to send verification email', error: error.message };
@@ -84,12 +94,20 @@ const sendVerificationEmail = async (email, name, otp) => {
 // Send password reset email
 const sendPasswordResetEmail = async (email, name, resetToken) => {
   try {
-    const transporter = createTransporter();
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    
-    const mailOptions = {
-      from: `"PetConnect" <${process.env.EMAIL_USER}>`,
-      to: email,
+
+    if (!hasApiKey) {
+      console.log('\n🔑 PASSWORD RESET (Development Mode):');
+      console.log(`To: ${email}`);
+      console.log(`Name: ${name}`);
+      console.log(`Reset URL: ${resetUrl}`);
+      console.log('---\n');
+      return { success: true, message: 'Password reset link logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [email],
       subject: 'Password Reset Request - PetConnect',
       html: `
         <!DOCTYPE html>
@@ -141,10 +159,15 @@ const sendPasswordResetEmail = async (email, name, resetToken) => {
         </body>
         </html>
       `
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    return { success: true, message: 'Password reset email sent successfully' };
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send password reset email', error: error.message };
+    }
+
+    console.log('✅ Password reset email sent successfully:', data);
+    return { success: true, message: 'Password reset email sent successfully', data };
   } catch (error) {
     console.error('Email sending error:', error);
     return { success: false, message: 'Failed to send password reset email', error: error.message };
@@ -154,11 +177,17 @@ const sendPasswordResetEmail = async (email, name, resetToken) => {
 // Send welcome email
 const sendWelcomeEmail = async (email, name) => {
   try {
-    const transporter = createTransporter();
-    
-    const mailOptions = {
-      from: `"PetConnect" <${process.env.EMAIL_USER}>`,
-      to: email,
+    if (!hasApiKey) {
+      console.log('\n🎉 WELCOME EMAIL (Development Mode):');
+      console.log(`To: ${email}`);
+      console.log(`Name: ${name}`);
+      console.log('---\n');
+      return { success: true, message: 'Welcome email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [email],
       subject: 'Welcome to PetConnect! 🐾',
       html: `
         <!DOCTYPE html>
@@ -217,10 +246,15 @@ const sendWelcomeEmail = async (email, name) => {
         </body>
         </html>
       `
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    return { success: true, message: 'Welcome email sent successfully' };
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send welcome email', error: error.message };
+    }
+
+    console.log('✅ Welcome email sent successfully:', data);
+    return { success: true, message: 'Welcome email sent successfully', data };
   } catch (error) {
     console.error('Email sending error:', error);
     return { success: false, message: 'Failed to send welcome email', error: error.message };
