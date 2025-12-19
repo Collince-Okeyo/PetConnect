@@ -203,9 +203,12 @@ const uploadProfilePicture = async (req, res) => {
       });
     }
 
+    // Convert Windows backslashes to forward slashes for URL
+    const profilePicturePath = req.file.path.replace(/\\/g, '/');
+
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { profilePicture: req.file.path },
+      { profilePicture: profilePicturePath },
       { new: true }
     ).select('-password');
 
@@ -213,6 +216,7 @@ const uploadProfilePicture = async (req, res) => {
       success: true,
       message: 'Profile picture uploaded successfully',
       data: {
+        profilePicture: profilePicturePath,
         user
       }
     });
