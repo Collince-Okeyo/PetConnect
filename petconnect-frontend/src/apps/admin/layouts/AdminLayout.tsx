@@ -14,7 +14,8 @@ import {
   LogOut,
   Menu,
   Bell,
-  Search
+  Search,
+  User,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -42,6 +43,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: Star, label: 'Ratings', path: '/admin/ratings' },
     { icon: MessageSquare, label: 'Complaints', path: '/admin/complaints' },
     { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
+    { icon: User, label: 'Profile', path: '/admin/profile' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ]
 

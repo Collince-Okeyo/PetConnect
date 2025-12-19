@@ -10,12 +10,38 @@ import Landing from './pages/Landing'
 
 // Admin App
 import AdminDashboard from './apps/admin/pages/Dashboard'
+import AdminUsers from './apps/admin/pages/Users'
+import AdminPets from './apps/admin/pages/Pets'
+import AdminWalks from './apps/admin/pages/Walks'
+import AdminPayments from './apps/admin/pages/Payments'
+import AdminRatings from './apps/admin/pages/Ratings'
+import AdminComplaints from './apps/admin/pages/Complaints'
+import AdminAnalytics from './apps/admin/pages/Analytics'
+import AdminSettings from './apps/admin/pages/Settings'
+import AdminProfile from './apps/admin/pages/Profile'
 
 // Owner App
 import OwnerDashboard from './apps/owner/pages/Dashboard'
+import OwnerPets from './apps/owner/pages/Pets'
+import OwnerBookWalk from './apps/owner/pages/BookWalk'
+import OwnerActiveWalks from './apps/owner/pages/ActiveWalks'
+import OwnerFindWalkers from './apps/owner/pages/FindWalkers'
+import OwnerWallet from './apps/owner/pages/Wallet'
+import OwnerReviews from './apps/owner/pages/Reviews'
+import OwnerMessages from './apps/owner/pages/Messages'
+import OwnerSettings from './apps/owner/pages/Settings'
+import OwnerProfile from './apps/owner/pages/Profile'
 
 // Walker App
 import WalkerDashboard from './apps/walker/pages/Dashboard'
+import WalkerRequests from './apps/walker/pages/Requests'
+import WalkerActiveWalks from './apps/walker/pages/ActiveWalks'
+import WalkerSchedule from './apps/walker/pages/Schedule'
+import WalkerEarnings from './apps/walker/pages/Earnings'
+import WalkerSettings from './apps/walker/pages/Settings'
+import WalkerReviews from './apps/walker/pages/Reviews'
+import WalkerMessages from './apps/walker/pages/Messages'
+import WalkerProfile from './apps/walker/pages/Profile'
 
 function App() {
   return (
@@ -33,18 +59,44 @@ function App() {
         <Route element={<ProtectedRoute roles={['admin']} />}>
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/pets" element={<AdminPets />} />
+          <Route path="/admin/walks" element={<AdminWalks />} />
+          <Route path="/admin/payments" element={<AdminPayments />} />
+          <Route path="/admin/ratings" element={<AdminRatings />} />
+          <Route path="/admin/complaints" element={<AdminComplaints />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
         </Route>
 
         {/* Owner Routes */}
         <Route element={<ProtectedRoute roles={['owner']} />}>
           <Route path="/owner" element={<Navigate to="/owner/dashboard" replace />} />
           <Route path="/owner/dashboard" element={<OwnerDashboard />} />
+          <Route path="/owner/pets" element={<OwnerPets />} />
+          <Route path="/owner/book-walk" element={<OwnerBookWalk />} />
+          <Route path="/owner/active-walks" element={<OwnerActiveWalks />} />
+          <Route path="/owner/walkers" element={<OwnerFindWalkers />} />
+          <Route path="/owner/wallet" element={<OwnerWallet />} />
+          <Route path="/owner/reviews" element={<OwnerReviews />} />
+          <Route path="/owner/messages" element={<OwnerMessages />} />
+          <Route path="/owner/settings" element={<OwnerSettings />} />
+          <Route path="/owner/profile" element={<OwnerProfile />} />
         </Route>
 
         {/* Walker Routes */}
         <Route element={<ProtectedRoute roles={['walker']} />}>
           <Route path="/walker" element={<Navigate to="/walker/dashboard" replace />} />
           <Route path="/walker/dashboard" element={<WalkerDashboard />} />
+          <Route path="/walker/requests" element={<WalkerRequests />} />
+          <Route path="/walker/active" element={<WalkerActiveWalks />} />
+          <Route path="/walker/schedule" element={<WalkerSchedule />} />
+          <Route path="/walker/earnings" element={<WalkerEarnings />} />
+          <Route path="/walker/reviews" element={<WalkerReviews />} />
+          <Route path="/walker/messages" element={<WalkerMessages />} />
+          <Route path="/walker/profile" element={<WalkerProfile />} />
+          <Route path="/walker/settings" element={<WalkerSettings />} />
         </Route>
 
         {/* Fallback */}

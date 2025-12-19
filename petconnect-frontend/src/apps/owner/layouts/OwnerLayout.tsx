@@ -43,6 +43,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
     { icon: Wallet, label: 'Wallet', path: '/owner/wallet' },
     { icon: Star, label: 'Reviews', path: '/owner/reviews' },
     { icon: MessageSquare, label: 'Messages', path: '/owner/messages' },
+    { icon: User, label: 'Profile', path: '/owner/profile' },
     { icon: Settings, label: 'Settings', path: '/owner/settings' },
   ]
 
