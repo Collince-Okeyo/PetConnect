@@ -22,8 +22,8 @@ const validateRegistration = [
   
   body('role')
     .optional()
-    .isIn(['owner', 'walker', 'vet'])
-    .withMessage('Role must be owner, walker, or vet'),
+    .isIn(['owner', 'walker', 'vet', 'admin'])
+    .withMessage('Role must be owner, walker, vet, or admin'),
   
   body('location.coordinates')
     .isArray({ min: 2, max: 2 })

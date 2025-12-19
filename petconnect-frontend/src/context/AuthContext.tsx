@@ -11,6 +11,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (params: { email?: string; phone?: string; password: string }) => Promise<void>
+  register: (params: Record<string, unknown>) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
   setAuth: (user: UserProfile | null, tokens: AuthTokens | null) => void
@@ -63,6 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuth(nextUser, nextTokens)
   }, [setAuth])
 
+  const register = useCallback(async (params: Record<string, unknown>) => {
+    const res = await auth.register(params)
+    const nextUser = res.data?.user ?? null
+    const nextTokens = res.data?.tokens ?? null
+    setAuth(nextUser, nextTokens)
+  }, [setAuth])
+
   const refresh = useCallback(async () => {
     if (!tokens?.refreshToken) return
     const res = await auth.refreshToken({ refreshToken: tokens.refreshToken })
@@ -78,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tokens, setAuth])
 
-  const value = useMemo<AuthContextValue>(() => ({ user, tokens, isLoading, login, logout, refresh, setAuth }), [user, tokens, isLoading, login, logout, refresh, setAuth])
+  const value = useMemo<AuthContextValue>(() => ({ user, tokens, isLoading, login, register, logout, refresh, setAuth }), [user, tokens, isLoading, login, register, logout, refresh, setAuth])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
