@@ -2,15 +2,17 @@ const User = require('../models/User');
 const Wallet = require('../models/Wallet');
 const BlacklistedToken = require('../models/BlacklistedToken');
 const { generateToken, generateRefreshToken, generateSessionToken } = require('../utils/generateToken');
-const { generateOTP, sendOTP, sendWelcomeSMS } = require('../utils/sendOTP');
-const { sendEmailVerification, sendPasswordResetEmail, sendWelcomeEmail } = require('../utils/sendEmail');
+const { generateOTP, sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../utils/emailService');
+const { sendSMSOTP, sendPasswordResetSMS } = require('../utils/smsService');
 const { getDeviceInfo, generateSessionId } = require('../utils/deviceInfo');
 const { generateTwoFactorSecret, generateQRCode, verifyTwoFactorToken, generateBackupCodes } = require('../utils/twoFactorAuth');
 const { validationResult } = require('express-validator');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 // Store OTPs temporarily (in production, use Redis)
 const otpStore = new Map();
+
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -69,33 +71,35 @@ const register = async (req, res) => {
 
     // Generate OTP for phone verification
     console.log('Generating OTP...');
-    const otp = generateOTP();
-    otpStore.set(user._id.toString(), {
-      otp,
-      expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
-    });
-
-    // Generate email verification token
-    console.log('Generating email verification token...');
-    const emailVerificationToken = user.generateEmailVerificationToken();
+    const phoneOTP = generateOTP();
+    const emailOTP = generateOTP();
+    
+    // Store OTPs in user document
+    user.phoneVerificationOTP = phoneOTP;
+    user.phoneVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    user.emailVerificationOTP = emailOTP;
+    user.emailVerificationOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     await user.save();
-    console.log('Email verification token generated');
 
-    // Send OTP (with error handling)
+    // Send SMS OTP (with error handling)
     try {
-      const otpResult = await sendOTP(user.phone, otp);
-      if (!otpResult.success) {
-        console.error('Failed to send OTP:', otpResult.error);
+      const smsResult = await sendSMSOTP(user.phone, phoneOTP);
+      if (!smsResult.success) {
+        console.error('Failed to send SMS OTP:', smsResult.error);
+      } else {
+        console.log('SMS OTP sent successfully');
       }
-    } catch (otpError) {
-      console.error('OTP sending error:', otpError);
+    } catch (smsError) {
+      console.error('SMS sending error:', smsError);
     }
 
-    // Send email verification (with error handling)
+    // Send email OTP (with error handling)
     try {
-      const emailResult = await sendEmailVerification(user.email, user.name, emailVerificationToken);
+      const emailResult = await sendVerificationEmail(user.email, user.name, emailOTP);
       if (!emailResult.success) {
-        console.error('Failed to send email verification:', emailResult.error);
+        console.error('Failed to send email OTP:', emailResult.error);
+      } else {
+        console.log('Email OTP sent successfully');
       }
     } catch (emailError) {
       console.error('Email sending error:', emailError);
@@ -130,7 +134,8 @@ const register = async (req, res) => {
           phone: user.phone,
           role: user.role,
           isVerified: user.isVerified,
-          isEmailVerified: user.isEmailVerified
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified
         },
         tokens: {
           accessToken,
@@ -1011,11 +1016,327 @@ const deactivateAccount = async (req, res) => {
   }
 };
 
+// @desc    Verify phone OTP
+// @route   POST /api/auth/verify-phone
+// @access  Public
+const verifyPhoneOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and OTP are required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isPhoneVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is already verified'
+      });
+    }
+
+    // Check if OTP is valid
+    if (!user.phoneVerificationOTP || !user.phoneVerificationExpires) {
+      return res.status(400).json({
+        success: false,
+        message: 'No OTP found. Please request a new one.'
+      });
+    }
+
+    if (new Date() > user.phoneVerificationExpires) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new one.'
+      });
+    }
+
+    if (user.phoneVerificationOTP !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP'
+      });
+    }
+
+    // Verify phone
+    user.isPhoneVerified = true;
+    user.phoneVerificationOTP = null;
+    user.phoneVerificationExpires = null;
+    
+    // Update overall verification status if both email and phone are verified
+    if (user.isEmailVerified && user.isPhoneVerified) {
+      user.isVerified = true;
+    }
+    
+    await user.save();
+
+    // Send welcome email if fully verified
+    if (user.isVerified) {
+      try {
+        await sendWelcomeEmail(user.email, user.name);
+      } catch (error) {
+        console.error('Failed to send welcome email:', error);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Phone number verified successfully',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          isPhoneVerified: user.isPhoneVerified,
+          isEmailVerified: user.isEmailVerified,
+          isVerified: user.isVerified
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Phone OTP verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during phone verification'
+    });
+  }
+};
+
+// @desc    Verify email OTP
+// @route   POST /api/auth/verify-email-otp
+// @access  Public
+const verifyEmailOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+
+    if (!userId || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and OTP are required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Check if OTP is valid
+    if (!user.emailVerificationOTP || !user.emailVerificationOTPExpires) {
+      return res.status(400).json({
+        success: false,
+        message: 'No OTP found. Please request a new one.'
+      });
+    }
+
+    if (new Date() > user.emailVerificationOTPExpires) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new one.'
+      });
+    }
+
+    if (user.emailVerificationOTP !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP'
+      });
+    }
+
+    // Verify email
+    user.isEmailVerified = true;
+    user.emailVerificationOTP = null;
+    user.emailVerificationOTPExpires = null;
+    
+    // Update overall verification status if both email and phone are verified
+    if (user.isEmailVerified && user.isPhoneVerified) {
+      user.isVerified = true;
+    }
+    
+    await user.save();
+
+    // Send welcome email if fully verified
+    if (user.isVerified) {
+      try {
+        await sendWelcomeEmail(user.email, user.name);
+      } catch (error) {
+        console.error('Failed to send welcome email:', error);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          isPhoneVerified: user.isPhoneVerified,
+          isEmailVerified: user.isEmailVerified,
+          isVerified: user.isVerified
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Email OTP verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during email verification'
+    });
+  }
+};
+
+// @desc    Resend phone OTP
+// @route   POST /api/auth/resend-phone-otp
+// @access  Public
+const resendPhoneOTP = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isPhoneVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is already verified'
+      });
+    }
+
+    // Generate new OTP
+    const phoneOTP = generateOTP();
+    user.phoneVerificationOTP = phoneOTP;
+    user.phoneVerificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+
+    // Send SMS OTP
+    const smsResult = await sendSMSOTP(user.phone, phoneOTP);
+    
+    if (!smsResult.success && !smsResult.development) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP',
+        error: smsResult.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent successfully to your phone'
+    });
+  } catch (error) {
+    console.error('Resend phone OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during OTP resend'
+    });
+  }
+};
+
+// @desc    Resend email OTP
+// @route   POST /api/auth/resend-email-otp
+// @access  Public
+const resendEmailOTP = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already verified'
+      });
+    }
+
+    // Generate new OTP
+    const emailOTP = generateOTP();
+    user.emailVerificationOTP = emailOTP;
+    user.emailVerificationOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    await user.save();
+
+    // Send email OTP
+    const emailResult = await sendVerificationEmail(user.email, user.name, emailOTP);
+    
+    if (!emailResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send OTP',
+        error: emailResult.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'OTP sent successfully to your email'
+    });
+  } catch (error) {
+    console.error('Resend email OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during OTP resend'
+    });
+  }
+};
+
+
+
 module.exports = {
   register,
   login,
   verifyOTP,
   resendOTP,
+  verifyPhoneOTP,
+  verifyEmailOTP,
+  resendPhoneOTP,
+  resendEmailOTP,
   getMe,
   changePassword,
   forgotPassword,
@@ -1031,3 +1352,4 @@ module.exports = {
   revokeSession,
   deactivateAccount
 };
+

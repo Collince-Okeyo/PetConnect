@@ -5,6 +5,10 @@ const {
   login,
   verifyOTP,
   resendOTP,
+  verifyPhoneOTP,
+  verifyEmailOTP,
+  resendPhoneOTP,
+  resendEmailOTP,
   getMe,
   changePassword,
   forgotPassword,
@@ -62,6 +66,26 @@ router.post('/verify', authRateLimit(15 * 60 * 1000, 10), verifyOTP);
 // @desc    Resend OTP
 // @access  Public
 router.post('/resend-verification', authRateLimit(15 * 60 * 1000, 3), resendOTP);
+
+// @route   POST /api/auth/verify-phone
+// @desc    Verify phone OTP
+// @access  Public
+router.post('/verify-phone', authRateLimit(15 * 60 * 1000, 10), verifyPhoneOTP);
+
+// @route   POST /api/auth/verify-email-otp
+// @desc    Verify email OTP
+// @access  Public
+router.post('/verify-email-otp', authRateLimit(15 * 60 * 1000, 10), verifyEmailOTP);
+
+// @route   POST /api/auth/resend-phone-otp
+// @desc    Resend phone OTP
+// @access  Public
+router.post('/resend-phone-otp', authRateLimit(15 * 60 * 1000, 3), resendPhoneOTP);
+
+// @route   POST /api/auth/resend-email-otp
+// @desc    Resend email OTP
+// @access  Public
+router.post('/resend-email-otp', authRateLimit(15 * 60 * 1000, 3), resendEmailOTP);
 
 // @route   POST /api/auth/forgot-password
 // @desc    Forgot password

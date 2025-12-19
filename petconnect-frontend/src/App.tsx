@@ -21,17 +21,19 @@ function Placeholder() {
   )
 }
 
+import Landing from './pages/Landing'
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Placeholder />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify" element={<VerifyOTP />} />
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route element={<ProtectedRoute roles={['owner','walker','admin']} />}>
+        <Route element={<ProtectedRoute roles={['owner', 'walker', 'admin']} />}>
           <Route path="/dashboard" element={<Dashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

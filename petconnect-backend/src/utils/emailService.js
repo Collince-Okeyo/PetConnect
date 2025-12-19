@@ -1,0 +1,235 @@
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+// Create reusable transporter
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: process.env.EMAIL_PORT || 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  });
+};
+
+// Generate OTP
+const generateOTP = () => {
+  return crypto.randomInt(100000, 999999).toString();
+};
+
+// Send email verification OTP
+const sendVerificationEmail = async (email, name, otp) => {
+  try {
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `"PetConnect" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'PetConnect Email Verification',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .otp-box { background: white; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; }
+            .otp-code { font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 5px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🐾 PetConnect</h1>
+              <p>Email Verification</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${name}!</h2>
+              <p>Thank you for registering with PetConnect. Please use the following OTP to verify your email address:</p>
+              
+              <div class="otp-box">
+                <p style="margin: 0; color: #666;">Your verification code is:</p>
+                <div class="otp-code">${otp}</div>
+                <p style="margin: 10px 0 0 0; color: #999; font-size: 14px;">This code will expire in 10 minutes</p>
+              </div>
+              
+              <p>If you didn't create an account with PetConnect, please ignore this email.</p>
+              
+              <p>Best regards,<br>The PetConnect Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+              <p>This is an automated email, please do not reply.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true, message: 'Verification email sent successfully' };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, message: 'Failed to send verification email', error: error.message };
+  }
+};
+
+// Send password reset email
+const sendPasswordResetEmail = async (email, name, resetToken) => {
+  try {
+    const transporter = createTransporter();
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    
+    const mailOptions = {
+      from: `"PetConnect" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Request - PetConnect',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🐾 PetConnect</h1>
+              <p>Password Reset Request</p>
+            </div>
+            <div class="content">
+              <h2>Hello ${name}!</h2>
+              <p>We received a request to reset your password. Click the button below to create a new password:</p>
+              
+              <div style="text-align: center;">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </div>
+              
+              <p>Or copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; background: white; padding: 10px; border-radius: 5px; font-size: 12px;">${resetUrl}</p>
+              
+              <div class="warning">
+                <strong>⚠️ Security Notice:</strong>
+                <ul style="margin: 10px 0;">
+                  <li>This link will expire in 10 minutes</li>
+                  <li>If you didn't request this, please ignore this email</li>
+                  <li>Your password won't change until you create a new one</li>
+                </ul>
+              </div>
+              
+              <p>Best regards,<br>The PetConnect Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+              <p>This is an automated email, please do not reply.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true, message: 'Password reset email sent successfully' };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, message: 'Failed to send password reset email', error: error.message };
+  }
+};
+
+// Send welcome email
+const sendWelcomeEmail = async (email, name) => {
+  try {
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `"PetConnect" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Welcome to PetConnect! 🐾',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .feature { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #667eea; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🐾 Welcome to PetConnect!</h1>
+            </div>
+            <div class="content">
+              <h2>Hello ${name}!</h2>
+              <p>Welcome to PetConnect - your trusted platform for pet care services! We're excited to have you join our community.</p>
+              
+              <h3>What you can do with PetConnect:</h3>
+              
+              <div class="feature">
+                <strong>🐕 Manage Your Pets</strong>
+                <p>Add your furry friends, track their medical records, and keep all their information in one place.</p>
+              </div>
+              
+              <div class="feature">
+                <strong>🚶 Book Dog Walks</strong>
+                <p>Find trusted dog walkers nearby and schedule walks at your convenience.</p>
+              </div>
+              
+              <div class="feature">
+                <strong>📍 Live Tracking</strong>
+                <p>Track your pet's walk in real-time and stay connected with your walker.</p>
+              </div>
+              
+              <div class="feature">
+                <strong>💳 Secure Payments</strong>
+                <p>Pay safely through M-Pesa integration with transparent pricing.</p>
+              </div>
+              
+              <p>Get started by completing your profile and adding your first pet!</p>
+              
+              <p>If you have any questions, our support team is here to help.</p>
+              
+              <p>Best regards,<br>The PetConnect Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    return { success: true, message: 'Welcome email sent successfully' };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, message: 'Failed to send welcome email', error: error.message };
+  }
+};
+
+module.exports = {
+  generateOTP,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmail
+};

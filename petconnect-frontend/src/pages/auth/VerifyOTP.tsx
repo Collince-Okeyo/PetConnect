@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { verifyOtp, resendVerification } from '../../lib/authClient'
 import AuthLayout from '../../components/layout/AuthLayout'
-import { Input, Label } from '../../components/ui/Input'
-import Button from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Button } from '../../components/ui/Button'
 
 export default function VerifyOTP() {
   const navigate = useNavigate()
@@ -46,14 +46,20 @@ export default function VerifyOTP() {
       {message && <div className="mb-3 text-sm text-green-400">{message}</div>}
       {error && <div className="mb-3 text-sm text-red-400">{error}</div>}
       <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <Label>User ID</Label>
-          <Input value={userId} onChange={(e) => setUserId(e.target.value)} required />
-        </div>
-        <div>
-          <Label>OTP</Label>
-          <Input className="tracking-widest text-center" value={otp} onChange={(e) => setOtp(e.target.value)} required maxLength={6} />
-        </div>
+        <Input
+          label="User ID"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          required
+        />
+        <Input
+          label="OTP"
+          className="tracking-widest text-center"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value)}
+          required
+          maxLength={6}
+        />
         <Button disabled={loading} className="w-full">{loading ? 'Verifying…' : 'Verify'}</Button>
       </form>
       <div className="mt-4 flex justify-between text-sm">

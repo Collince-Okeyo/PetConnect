@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import AuthLayout from '../../components/layout/AuthLayout'
-import { Input, Label } from '../../components/ui/Input'
-import Button from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Button } from '../../components/ui/Button'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -31,10 +31,13 @@ export default function ForgotPassword() {
       {message && <div className="mb-3 text-sm text-green-400">{message}</div>}
       {error && <div className="mb-3 text-sm text-red-400">{error}</div>}
       <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <Label>Email</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
+        <Input
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
         <Button type="submit" disabled={loading} className="w-full">{loading ? 'Sending…' : 'Send reset link'}</Button>
       </form>
       <div className="mt-4 text-sm text-center">

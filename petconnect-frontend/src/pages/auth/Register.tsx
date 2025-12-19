@@ -1,35 +1,48 @@
 import { useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import { Link, useNavigate } from 'react-router-dom'
-import * as auth from '../../lib/authClient'
 import AuthLayout from '../../components/layout/AuthLayout'
-import { Input, Label } from '../../components/ui/Input'
-import Button from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Button } from '../../components/ui/Button'
+import { motion } from 'framer-motion'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function Register() {
+  const { register } = useAuth()
   const navigate = useNavigate()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'owner' | 'walker'>('owner')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: ''
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords don't match")
+      return
+    }
+
     setLoading(true)
     try {
-      const res = await auth.register({ name, email, phone, password, role })
-      const userId = res.data?.user?.id
-      if (userId) {
-        navigate('/verify', { state: { userId } })
-      } else {
-        navigate('/login')
-      }
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone
+      })
+      navigate('/dashboard')
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Registration failed')
     } finally {
@@ -38,148 +51,121 @@ export default function Register() {
   }
 
   return (
-    <AuthLayout title="Create your account" subtitle="Find trusted walkers or start walking">
-      {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <Label>Name</Label>
-          <Input placeholder="Enter your name" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-        <div>
-          <Label>Email</Label>
+    <AuthLayout title="Create an account" subtitle="Join the PetConnect community">
+      <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm"
+          >
+            {error}
+          </motion.div>
+        )}
+
+        <form onSubmit={onSubmit} className="space-y-4">
           <Input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Full Name"
+            name="name"
+            placeholder="John Doe"
+            value={formData.name}
+            onChange={handleChange}
             required
-            pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-            title="Please enter a valid email address"
-            className={
-              email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-                ? 'border-red-500'
-                : ''
-            }
           />
-          {email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && (
-            <div className="text-xs text-red-600 mt-1">Please enter a valid email address.</div>
-          )}
-        </div>
-        <div>
-          <Label>Phone</Label>
-          <Input placeholder="Enter your phone" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-        </div>
-        <div>
-          <Label>Password</Label>
+
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            placeholder="name@example.com"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+
+          <Input
+            label="Phone Number"
+            name="phone"
+            type="tel"
+            placeholder="+1 (555) 000-0000"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+          />
+
           <div className="relative">
             <Input
+              label="Password"
+              name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
+              value={formData.password}
+              onChange={handleChange}
               required
             />
             <button
               type="button"
-              tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-[34px] text-gray-400 hover:text-gray-600 transition-colors"
             >
-              {showPassword ? (
-                // Eye-off icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4-9-7s4-7 9-7c1.326 0 2.59.26 3.75.725M19.07 4.93a10.05 10.05 0 012.93 4.07c0 3-4 7-9 7-.326 0-.646-.02-.96-.06M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
-                </svg>
-              ) : (
-                // Eye icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
-        </div>
-        <div>
-          <Label>Confirm Password</Label>
-          <div className="relative">
-            <Input
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              // Show error style if passwords do not match and confirmPassword is not empty
-              className={
-                confirmPassword && confirmPassword !== password
-                  ? 'border-red-500'
-                  : ''
-              }
-            />
-            <button
-              type="button"
-              tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              onClick={() => setShowConfirmPassword((prev) => !prev)}
-              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-            >
-              {showConfirmPassword ? (
-                // Eye-off icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-5 0-9-4-9-7s4-7 9-7c1.326 0 2.59.26 3.75.725M19.07 4.93a10.05 10.05 0 012.93 4.07c0 3-4 7-9 7-.326 0-.646-.02-.96-.06M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
-                </svg>
-              ) : (
-                // Eye icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
-            </button>
+
+          <Input
+            label="Confirm Password"
+            name="confirmPassword"
+            type={showPassword ? "text" : "password"}
+            placeholder="Confirm your password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+
+          <Button
+            type="submit"
+            className="w-full mt-4 font-bold text-base"
+            isLoading={loading}
+            size="lg"
+          >
+            Create Account
+          </Button>
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-2 text-gray-500">Or sign up with</span>
+            </div>
           </div>
-          {confirmPassword && confirmPassword !== password && (
-            <div className="text-xs text-red-600 mt-1">Passwords do not match</div>
-          )}
-        </div>
-        <div>
-          <Label>Role</Label>
-          <div className="flex gap-6">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="role"
-                value="owner"
-                checked={role === 'owner'}
-                onChange={() => setRole('owner')}
-                className="accent-brand-leaf mr-2"
-              />
-              <span>Pet Owner</span>
-            </label>
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="role"
-                value="walker"
-                checked={role === 'walker'}
-                onChange={() => setRole('walker')}
-                className="accent-brand-leaf mr-2"
-              />
-              <span>Walker</span>
-            </label>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Button variant="outline" type="button" onClick={() => { }} className="flex items-center gap-2">
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              Google
+            </Button>
+            <Button variant="outline" type="button" onClick={() => { }} className="flex items-center gap-2">
+              <svg className="h-5 w-5 text-[#1877F2] fill-current" viewBox="0 0 24 24">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.791-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+              </svg>
+              Facebook
+            </Button>
           </div>
-        </div>
-        <Button type="submit" disabled={loading} className="w-full rounded-full">
-          {loading ? 'Creating…' : 'Create account'}
-        </Button>
-      </form>
-      <div className="mt-4 text-sm text-center">
-        Already have an account? <Link to="/login" className="text-brand-leaf hover:underline">Sign in</Link>
+
+          <p className="mt-8 text-center text-sm text-gray-500">
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-leaf-dark hover:text-leaf transition-colors">
+              Sign in
+            </Link>
+          </p>
+        </form>
       </div>
     </AuthLayout>
   )
 }
-
-

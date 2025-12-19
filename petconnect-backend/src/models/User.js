@@ -121,6 +121,26 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isPhoneVerified: {
+    type: Boolean,
+    default: false
+  },
+  phoneVerificationOTP: {
+    type: String,
+    default: null
+  },
+  phoneVerificationExpires: {
+    type: Date,
+    default: null
+  },
+  emailVerificationOTP: {
+    type: String,
+    default: null
+  },
+  emailVerificationOTPExpires: {
+    type: Date,
+    default: null
+  },
   twoFactorEnabled: {
     type: Boolean,
     default: false
