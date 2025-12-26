@@ -119,7 +119,7 @@ export default function Profile() {
                 <div className="relative inline-block mb-4">
                   {user?.profilePicture ? (
                     <img
-                      src={user.profilePicture.startsWith('http') ? user.profilePicture : `${import.meta.env.VITE_API_URL}/${user.profilePicture}`}
+                      src={user.profilePicture.startsWith('http') ? user.profilePicture : `http://localhost:5000/${user.profilePicture}`}
                       alt={user.name}
                       className="w-32 h-32 rounded-full object-cover"
                     />

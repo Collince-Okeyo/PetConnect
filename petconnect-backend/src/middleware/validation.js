@@ -49,12 +49,12 @@ const validateLogin = [
 const validatePet = [
   body('name')
     .trim()
-    .isLength({ min: 1, max: 30 })
-    .withMessage('Pet name must be between 1 and 30 characters'),
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Pet name must be between 1 and 100 characters'),
   
-  body('type')
-    .isIn(['dog', 'cat', 'bird', 'rabbit', 'other'])
-    .withMessage('Pet type must be dog, cat, bird, rabbit, or other'),
+  body('petType')
+    .isMongoId()
+    .withMessage('Valid pet type ID is required'),
   
   body('breed')
     .trim()
@@ -62,7 +62,7 @@ const validatePet = [
     .withMessage('Pet breed is required'),
   
   body('age')
-    .isInt({ min: 0, max: 30 })
+    .isFloat({ min: 0, max: 30 })
     .withMessage('Age must be between 0 and 30 years'),
   
   body('gender')
@@ -73,6 +73,16 @@ const validatePet = [
     .optional()
     .isFloat({ min: 0, max: 200 })
     .withMessage('Weight must be between 0 and 200kg'),
+  
+  body('temperament')
+    .optional()
+    .isMongoId()
+    .withMessage('Valid temperament ID is required'),
+  
+  body('vaccinated')
+    .optional()
+    .isBoolean()
+    .withMessage('Vaccinated must be true or false'),
   
   body('description')
     .optional()

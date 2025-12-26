@@ -54,6 +54,10 @@ const petSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Temperament'
   },
+  vaccinated: {
+    type: Boolean,
+    default: false
+  },
   specialNeeds: [{
     type: String,
     description: String

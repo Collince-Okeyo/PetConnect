@@ -18,7 +18,8 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
     weight: '',
     gender: 'male',
     description: '',
-    temperament: ''
+    temperament: '',
+    vaccinated: false
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
@@ -101,28 +102,39 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
       setLoading(true)
       setError('')
 
-      // Create FormData for multipart upload
-      const submitData = new FormData()
-      submitData.append('name', formData.name)
-      submitData.append('petType', formData.petType)
-      submitData.append('breed', formData.breed)
-      submitData.append('age', formData.age)
-      submitData.append('weight', formData.weight)
-      submitData.append('gender', formData.gender)
-      submitData.append('description', formData.description)
-      submitData.append('temperament', formData.temperament)
-      
-      if (imageFile) {
-        submitData.append('photo', imageFile)
+      // Prepare JSON data
+      const submitData = {
+        name: formData.name,
+        petType: formData.petType,
+        breed: formData.breed,
+        age: parseFloat(formData.age),
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        gender: formData.gender,
+        description: formData.description,
+        temperament: formData.temperament || undefined,
+        vaccinated: formData.vaccinated
       }
 
-      const response = await api.post('/pets', submitData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      const response = await api.post('/pets', submitData)
 
       if (response.data.success) {
+        // If there's an image, upload it separately
+        if (imageFile && response.data.data.pet._id) {
+          const photoData = new FormData()
+          photoData.append('photo', imageFile)
+          
+          try {
+            await api.post(`/pets/${response.data.data.pet._id}/upload-photo`, photoData, {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            })
+          } catch (photoErr) {
+            console.error('Photo upload failed:', photoErr)
+            // Don't fail the whole operation if photo upload fails
+          }
+        }
+
         onSuccess()
         handleClose()
       }
@@ -143,7 +155,8 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
       weight: '',
       gender: 'male',
       description: '',
-      temperament: temperaments.length > 0 ? temperaments[0]._id : ''
+      temperament: temperaments.length > 0 ? temperaments[0]._id : '',
+      vaccinated: false
     })
     setImageFile(null)
     setImagePreview('')
@@ -349,6 +362,19 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Vaccinated */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.vaccinated}
+                    onChange={(e) => setFormData({ ...formData, vaccinated: e.target.checked })}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Pet is vaccinated</span>
+                </label>
               </div>
 
               {/* Description */}

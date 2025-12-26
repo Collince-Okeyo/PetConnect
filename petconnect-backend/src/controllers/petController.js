@@ -221,9 +221,12 @@ const uploadPetPhoto = async (req, res) => {
       });
     }
 
+    // Normalize path to use forward slashes for URL compatibility
+    const photoUrl = req.file.path.replace(/\\/g, '/');
+
     // Add photo to pet's photos array
     pet.photos.push({
-      url: req.file.path,
+      url: photoUrl,
       caption: req.body.caption || '',
       uploadedAt: new Date()
     });
