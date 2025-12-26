@@ -61,26 +61,29 @@ export default function AddPetModal({ isOpen, onClose, onSuccess, mode = 'add', 
   useEffect(() => {
     if (isOpen) {
       fetchPetData()
-      // Pre-fill form data in edit mode
-      if (mode === 'edit' && pet) {
-        setFormData({
-          name: pet.name,
-          petType: pet.petType._id,
-          breed: pet.breed,
-          age: pet.age.toString(),
-          weight: pet.weight?.toString() || '',
-          gender: pet.gender,
-          description: pet.description || '',
-          temperament: pet.temperament?._id || '',
-          vaccinated: pet.vaccinated || false
-        })
-        // Set existing image preview
-        if (pet.photos && pet.photos.length > 0) {
-          setImagePreview(`http://localhost:5000/${pet.photos[0].url}`)
-        }
+    }
+  }, [isOpen])
+
+  // Pre-fill form data in edit mode after pet types are loaded
+  useEffect(() => {
+    if (mode === 'edit' && pet && petTypes.length > 0 && !loadingData) {
+      setFormData({
+        name: pet.name,
+        petType: pet.petType._id,
+        breed: pet.breed,
+        age: pet.age.toString(),
+        weight: pet.weight?.toString() || '',
+        gender: pet.gender,
+        description: pet.description || '',
+        temperament: pet.temperament?._id || '',
+        vaccinated: pet.vaccinated || false
+      })
+      // Set existing image preview
+      if (pet.photos && pet.photos.length > 0) {
+        setImagePreview(`http://localhost:5000/${pet.photos[0].url}`)
       }
     }
-  }, [isOpen, mode, pet])
+  }, [mode, pet, petTypes, loadingData])
 
   const fetchPetData = async () => {
     try {
@@ -92,16 +95,16 @@ export default function AddPetModal({ isOpen, onClose, onSuccess, mode = 'add', 
 
       if (typesRes.data.success) {
         setPetTypes(typesRes.data.data.petTypes)
-        // Set first pet type as default
-        if (typesRes.data.data.petTypes.length > 0 && !formData.petType) {
+        // Set first pet type as default ONLY in add mode
+        if (mode === 'add' && typesRes.data.data.petTypes.length > 0 && !formData.petType) {
           setFormData(prev => ({ ...prev, petType: typesRes.data.data.petTypes[0]._id }))
         }
       }
 
       if (temperamentsRes.data.success) {
         setTemperaments(temperamentsRes.data.data.temperaments)
-        // Set first temperament as default
-        if (temperamentsRes.data.data.temperaments.length > 0 && !formData.temperament) {
+        // Set first temperament as default ONLY in add mode
+        if (mode === 'add' && temperamentsRes.data.data.temperaments.length > 0 && !formData.temperament) {
           setFormData(prev => ({ ...prev, temperament: temperamentsRes.data.data.temperaments[0]._id }))
         }
       }
