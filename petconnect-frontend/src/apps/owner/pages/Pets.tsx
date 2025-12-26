@@ -2,6 +2,8 @@ import OwnerLayout from '../layouts/OwnerLayout'
 import { Plus, Edit, Trash2, Calendar, Loader } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import AddPetModal from '../../../components/AddPetModal'
+import Toast from '../../../components/Toast'
+import ConfirmDialog from '../../../components/ConfirmDialog'
 import { api } from '../../../lib/api'
 
 interface Pet {
@@ -32,9 +34,18 @@ interface Pet {
 
 export default function Pets() {
   const [showAddPetModal, setShowAddPetModal] = useState(false)
+  const [showEditPetModal, setShowEditPetModal] = useState(false)
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [petToDelete, setPetToDelete] = useState<Pet | null>(null)
   const [pets, setPets] = useState<Pet[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [toast, setToast] = useState<{show: boolean, type: 'success' | 'error', message: string}>({
+    show: false,
+    type: 'success',
+    message: ''
+  })
 
   useEffect(() => {
     fetchPets()
@@ -56,21 +67,46 @@ export default function Pets() {
     }
   }
 
-  const handlePetAdded = () => {
-    // Refresh pets list
-    fetchPets()
-    setShowAddPetModal(false)
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ show: true, type, message })
   }
 
-  const handleDeletePet = async (petId: string) => {
-    if (!confirm('Are you sure you want to delete this pet?')) return
+  const handlePetAdded = () => {
+    fetchPets()
+    setShowAddPetModal(false)
+    showToast('success', 'Pet added successfully!')
+  }
+
+  const handlePetUpdated = () => {
+    fetchPets()
+    setShowEditPetModal(false)
+    setSelectedPet(null)
+    showToast('success', 'Pet updated successfully!')
+  }
+
+  const handleEditPet = (pet: Pet) => {
+    setSelectedPet(pet)
+    setShowEditPetModal(true)
+  }
+
+  const handleDeleteClick = (pet: Pet) => {
+    setPetToDelete(pet)
+    setShowDeleteDialog(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!petToDelete) return
 
     try {
-      await api.delete(`/pets/${petId}`)
-      fetchPets() // Refresh list
+      await api.delete(`/pets/${petToDelete._id}`)
+      showToast('success', `${petToDelete.name} has been deleted successfully`)
+      fetchPets()
     } catch (err) {
       console.error('Error deleting pet:', err)
-      alert('Failed to delete pet')
+      showToast('error', 'Failed to delete pet. Please try again.')
+    } finally {
+      setShowDeleteDialog(false)
+      setPetToDelete(null)
     }
   }
 
@@ -133,7 +169,8 @@ export default function Pets() {
               <PetCard
                 key={pet._id}
                 pet={pet}
-                onDelete={() => handleDeletePet(pet._id)}
+                onEdit={handleEditPet}
+                onDelete={handleDeleteClick}
               />
             ))}
           </div>
@@ -145,6 +182,41 @@ export default function Pets() {
         isOpen={showAddPetModal}
         onClose={() => setShowAddPetModal(false)}
         onSuccess={handlePetAdded}
+        mode="add"
+      />
+
+      {/* Edit Pet Modal */}
+      <AddPetModal
+        isOpen={showEditPetModal}
+        onClose={() => {
+          setShowEditPetModal(false)
+          setSelectedPet(null)
+        }}
+        onSuccess={handlePetUpdated}
+        mode="edit"
+        pet={selectedPet}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete Pet"
+        message={`Are you sure you want to delete ${petToDelete?.name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false)
+          setPetToDelete(null)
+        }}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast({ show: false, type: 'success', message: '' })}
       />
     </OwnerLayout>
   )
@@ -166,10 +238,11 @@ function StatCard({ title, value }: StatCardProps) {
 
 interface PetCardProps {
   pet: Pet
-  onDelete: () => void
+  onEdit: (pet: Pet) => void
+  onDelete: (pet: Pet) => void
 }
 
-function PetCard({ pet, onDelete }: PetCardProps) {
+function PetCard({ pet, onEdit, onDelete }: PetCardProps) {
   const petImage = pet.photos && pet.photos.length > 0 
     ? `http://localhost:5000/${pet.photos[0].url}`
     : null
@@ -185,13 +258,14 @@ function PetCard({ pet, onDelete }: PetCardProps) {
         </div>
         <div className="flex gap-2">
           <button 
+            onClick={() => onEdit(pet)}
             className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
             title="Edit pet"
           >
             <Edit className="w-4 h-4" />
           </button>
           <button 
-            onClick={onDelete}
+            onClick={() => onDelete(pet)}
             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
             title="Delete pet"
           >
@@ -208,6 +282,10 @@ function PetCard({ pet, onDelete }: PetCardProps) {
           <span className="text-gray-500">Age</span>
           <span className="font-medium text-gray-900">{pet.age} {pet.age === 1 ? 'year' : 'years'}</span>
         </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Type</span>
+          <span className="font-medium text-gray-900">{pet.petType.name}</span>
+        </div>
         {pet.weight && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Weight</span>
@@ -218,6 +296,12 @@ function PetCard({ pet, onDelete }: PetCardProps) {
           <span className="text-gray-500">Vaccinated</span>
           <span className={`font-medium ${pet.vaccinated ? 'text-green-600' : 'text-red-600'}`}>
             {pet.vaccinated ? 'Yes' : 'No'}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Temperament</span>
+          <span className={`font-medium ${pet.temperament ? 'text-gray-900' : 'text-gray-400'}`}>
+            {pet.temperament?.name || 'Not specified'}
           </span>
         </div>
       </div>

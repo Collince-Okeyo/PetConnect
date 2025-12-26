@@ -21,6 +21,10 @@ const addPet = async (req, res) => {
     };
 
     const pet = await Pet.create(petData);
+    
+    // Populate the references before returning
+    await pet.populate('petType', 'name icon');
+    await pet.populate('temperament', 'name icon');
 
     res.status(201).json({
       success: true,
@@ -46,7 +50,10 @@ const getUserPets = async (req, res) => {
     const pets = await Pet.find({ 
       owner: req.user.id,
       isActive: true 
-    }).sort({ createdAt: -1 });
+    })
+    .populate('petType', 'name icon')
+    .populate('temperament', 'name icon')
+    .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -68,7 +75,10 @@ const getUserPets = async (req, res) => {
 // @access  Private
 const getPetById = async (req, res) => {
   try {
-    const pet = await Pet.findById(req.params.id).populate('owner', 'name email phone');
+    const pet = await Pet.findById(req.params.id)
+      .populate('owner', 'name email phone')
+      .populate('petType', 'name icon')
+      .populate('temperament', 'name icon');
 
     if (!pet) {
       return res.status(404).json({
@@ -135,7 +145,9 @@ const updatePet = async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    );
+    )
+    .populate('petType', 'name icon')
+    .populate('temperament', 'name icon');
 
     res.json({
       success: true,

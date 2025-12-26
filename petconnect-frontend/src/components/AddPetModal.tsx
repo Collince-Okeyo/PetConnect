@@ -3,13 +3,40 @@ import { X, Upload, Loader, Camera } from 'lucide-react'
 import { api } from '../lib/api'
 import type { PetType, Temperament } from '../types/petData'
 
+interface Pet {
+  _id: string
+  name: string
+  breed: string
+  age: number
+  weight?: number
+  gender: string
+  description?: string
+  vaccinated?: boolean
+  petType: {
+    _id: string
+    name: string
+    icon: string
+  }
+  temperament?: {
+    _id: string
+    name: string
+    icon: string
+  }
+  photos?: Array<{
+    url: string
+    caption?: string
+  }>
+}
+
 interface AddPetModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  mode?: 'add' | 'edit'
+  pet?: Pet | null
 }
 
-export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalProps) {
+export default function AddPetModal({ isOpen, onClose, onSuccess, mode = 'add', pet = null }: AddPetModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     petType: '',
@@ -34,8 +61,26 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
   useEffect(() => {
     if (isOpen) {
       fetchPetData()
+      // Pre-fill form data in edit mode
+      if (mode === 'edit' && pet) {
+        setFormData({
+          name: pet.name,
+          petType: pet.petType._id,
+          breed: pet.breed,
+          age: pet.age.toString(),
+          weight: pet.weight?.toString() || '',
+          gender: pet.gender,
+          description: pet.description || '',
+          temperament: pet.temperament?._id || '',
+          vaccinated: pet.vaccinated || false
+        })
+        // Set existing image preview
+        if (pet.photos && pet.photos.length > 0) {
+          setImagePreview(`http://localhost:5000/${pet.photos[0].url}`)
+        }
+      }
     }
-  }, [isOpen])
+  }, [isOpen, mode, pet])
 
   const fetchPetData = async () => {
     try {
@@ -115,16 +160,20 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
         vaccinated: formData.vaccinated
       }
 
-      const response = await api.post('/pets', submitData)
+      // Use POST for add mode, PUT for edit mode
+      const response = mode === 'edit' && pet
+        ? await api.put(`/pets/${pet._id}`, submitData)
+        : await api.post('/pets', submitData)
 
       if (response.data.success) {
         // If there's an image, upload it separately
-        if (imageFile && response.data.data.pet._id) {
+        const petId = mode === 'edit' && pet ? pet._id : response.data.data.pet._id
+        if (imageFile && petId) {
           const photoData = new FormData()
           photoData.append('photo', imageFile)
           
           try {
-            await api.post(`/pets/${response.data.data.pet._id}/upload-photo`, photoData, {
+            await api.post(`/pets/${petId}/upload-photo`, photoData, {
               headers: {
                 'Content-Type': 'multipart/form-data'
               }
@@ -171,7 +220,7 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-white">Add New Pet</h2>
+          <h2 className="text-2xl font-bold text-white">{mode === 'edit' ? 'Edit Pet' : 'Add New Pet'}</h2>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
@@ -415,7 +464,7 @@ export default function AddPetModal({ isOpen, onClose, onSuccess }: AddPetModalP
                       Adding Pet...
                     </>
                   ) : (
-                    'Add Pet'
+                    mode === 'edit' ? 'Update Pet' : 'Add Pet'
                   )}
                 </button>
               </div>
