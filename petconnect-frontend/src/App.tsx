@@ -43,9 +43,26 @@ import WalkerReviews from './apps/walker/pages/Reviews'
 import WalkerMessages from './apps/walker/pages/Messages'
 import WalkerProfile from './apps/walker/pages/Profile'
 
+import IdleTimer from './components/IdleTimer'
+import { useAuth } from './context/AuthContext'
+
 function App() {
+  const { user } = useAuth()
+  
+  // Idle timeout configuration
+  const IDLE_TIMEOUT = Number(import.meta.env.VITE_IDLE_TIMEOUT) || 30 * 60 * 1000 // 30 minutes
+  const WARNING_TIME = Number(import.meta.env.VITE_WARNING_TIME) || 2 * 60 * 1000 // 2 minutes
+
   return (
     <BrowserRouter>
+      {/* Idle Timer - only active when user is logged in */}
+      {user && (
+        <IdleTimer 
+          timeout={IDLE_TIMEOUT}
+          warningTime={WARNING_TIME}
+        />
+      )}
+      
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />

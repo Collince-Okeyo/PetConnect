@@ -70,6 +70,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/users', require('./src/routes/users'));
 app.use('/api/pets', require('./src/routes/pets'));
+app.use('/api/pet-types', require('./src/routes/petTypes'));
+app.use('/api/temperaments', require('./src/routes/temperaments'));
 // app.use('/api/walks', require('./src/routes/walks'));
 // app.use('/api/payments', require('./src/routes/payments'));
 

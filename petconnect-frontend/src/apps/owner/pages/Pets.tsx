@@ -1,7 +1,16 @@
 import OwnerLayout from '../layouts/OwnerLayout'
 import { Plus, Edit, Trash2, Calendar } from 'lucide-react'
+import { useState } from 'react'
+import AddPetModal from '../../../components/AddPetModal'
 
 export default function Pets() {
+  const [showAddPetModal, setShowAddPetModal] = useState(false)
+
+  const handlePetAdded = () => {
+    // Refresh the page to show the new pet
+    window.location.reload()
+  }
+
   return (
     <OwnerLayout>
       <div>
@@ -11,7 +20,10 @@ export default function Pets() {
             <h1 className="text-3xl font-bold text-gray-900">My Pets</h1>
             <p className="text-gray-600 mt-1">Manage your furry friends</p>
           </div>
-          <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2">
+          <button
+            onClick={() => setShowAddPetModal(true)}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2"
+          >
             <Plus className="w-5 h-5" />
             Add New Pet
           </button>
@@ -58,6 +70,13 @@ export default function Pets() {
           />
         </div>
       </div>
+
+      {/* Add Pet Modal */}
+      <AddPetModal
+        isOpen={showAddPetModal}
+        onClose={() => setShowAddPetModal(false)}
+        onSuccess={handlePetAdded}
+      />
     </OwnerLayout>
   )
 }

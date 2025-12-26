@@ -1,17 +1,28 @@
 import AdminLayout from '../layouts/AdminLayout'
-import { Search, Dog, MoreVertical } from 'lucide-react'
+import { Search, Dog, MoreVertical, Settings } from 'lucide-react'
 import { useState } from 'react'
+import PetDataManagement from '../../../components/admin/PetDataManagement'
 
 export default function Pets() {
   const [filter, setFilter] = useState('all')
+  const [showManagement, setShowManagement] = useState(false)
 
   return (
     <AdminLayout>
       <div>
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Pet Management</h1>
-          <p className="text-gray-600 mt-1">View and manage all registered pets</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Pet Management</h1>
+            <p className="text-gray-600 mt-1">View and manage all registered pets</p>
+          </div>
+          <button
+            onClick={() => setShowManagement(true)}
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            <Settings className="w-5 h-5" />
+            Manage Pet Data
+          </button>
         </div>
 
         {/* Stats */}
@@ -127,6 +138,11 @@ export default function Pets() {
           </div>
         </div>
       </div>
+
+      {/* Pet Data Management Modal */}
+      {showManagement && (
+        <PetDataManagement onClose={() => setShowManagement(false)} />
+      )}
     </AdminLayout>
   )
 }

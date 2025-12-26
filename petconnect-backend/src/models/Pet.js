@@ -10,12 +10,12 @@ const petSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Pet name is required'],
     trim: true,
-    maxlength: [30, 'Pet name cannot be more than 30 characters']
+    maxlength: [100, 'Pet name cannot be more than 100 characters']
   },
-  type: {
-    type: String,
-    required: [true, 'Pet type is required'],
-    enum: ['dog', 'cat', 'bird', 'rabbit', 'other']
+  petType: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PetType',
+    required: [true, 'Pet type is required']
   },
   breed: {
     type: String,
@@ -51,9 +51,8 @@ const petSchema = new mongoose.Schema({
     maxlength: [500, 'Description cannot be more than 500 characters']
   },
   temperament: {
-    type: String,
-    enum: ['calm', 'energetic', 'aggressive', 'friendly', 'shy', 'playful'],
-    default: 'friendly'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Temperament'
   },
   specialNeeds: [{
     type: String,
