@@ -13,10 +13,11 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Rate limiting
+// Rate limiting - more permissive in development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 10000, // 10,000 requests per 15 minutes
+  message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);
 
@@ -81,7 +82,7 @@ app.use('/api/pets', require('./src/routes/pets'));
 app.use('/api/pet-types', require('./src/routes/petTypes'));
 app.use('/api/temperaments', require('./src/routes/temperaments'));
 app.use('/api/admin', require('./src/routes/admin'));
-// app.use('/api/walks', require('./src/routes/walks'));
+app.use('/api/walks', require('./src/routes/walks'));
 // app.use('/api/payments', require('./src/routes/payments'));
 
 // Error handling middleware

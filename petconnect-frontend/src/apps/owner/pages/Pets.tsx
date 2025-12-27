@@ -1,6 +1,7 @@
 import OwnerLayout from '../layouts/OwnerLayout'
 import { Plus, Edit, Trash2, Calendar, Loader } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AddPetModal from '../../../components/AddPetModal'
 import Toast from '../../../components/Toast'
 import ConfirmDialog from '../../../components/ConfirmDialog'
@@ -33,6 +34,7 @@ interface Pet {
 }
 
 export default function Pets() {
+  const navigate = useNavigate()
   const [showAddPetModal, setShowAddPetModal] = useState(false)
   const [showEditPetModal, setShowEditPetModal] = useState(false)
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null)
@@ -110,6 +112,10 @@ export default function Pets() {
     }
   }
 
+  const handleBookWalk = (petId: string) => {
+    navigate(`/owner/book-walk?petId=${petId}`)
+  }
+
   return (
     <OwnerLayout>
       <div>
@@ -171,6 +177,7 @@ export default function Pets() {
                 pet={pet}
                 onEdit={handleEditPet}
                 onDelete={handleDeleteClick}
+                onBookWalk={handleBookWalk}
               />
             ))}
           </div>
@@ -240,9 +247,10 @@ interface PetCardProps {
   pet: Pet
   onEdit: (pet: Pet) => void
   onDelete: (pet: Pet) => void
+  onBookWalk: (petId: string) => void
 }
 
-function PetCard({ pet, onEdit, onDelete }: PetCardProps) {
+function PetCard({ pet, onEdit, onDelete, onBookWalk }: PetCardProps) {
   const petImage = pet.photos && pet.photos.length > 0 
     ? `http://localhost:5000/${pet.photos[0].url}`
     : null
@@ -319,7 +327,10 @@ function PetCard({ pet, onEdit, onDelete }: PetCardProps) {
           <span className="text-sm text-gray-500">Last Walk</span>
           <span className="text-sm font-medium text-gray-900">Never</span>
         </div>
-        <button className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2">
+        <button 
+          onClick={() => onBookWalk(pet._id)}
+          className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center justify-center gap-2"
+        >
           <Calendar className="w-4 h-4" />
           Book Walk
         </button>

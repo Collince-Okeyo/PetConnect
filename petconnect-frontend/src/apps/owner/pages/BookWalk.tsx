@@ -1,12 +1,154 @@
 import OwnerLayout from '../layouts/OwnerLayout'
-import { MapPin, Clock, DollarSign, Star, Calendar } from 'lucide-react'
-import { useState } from 'react'
+import { Clock, DollarSign, Star, Calendar, Loader } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { api } from '../../../lib/api'
+import Toast from '../../../components/Toast'
+
+interface Pet {
+  _id: string
+  name: string
+  breed: string
+  petType: {
+    name: string
+    icon: string
+  }
+}
+
+interface Walker {
+  _id: string
+  name: string
+  email: string
+  phone?: string
+  profileImage?: string
+  rating?: number
+  totalWalks?: number
+  location?: string
+}
 
 export default function BookWalk() {
-  const [selectedPet, setSelectedPet] = useState('')
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const petIdFromUrl = searchParams.get('petId')
+
+  const [pets, setPets] = useState<Pet[]>([])
+  const [walkers, setWalkers] = useState<Walker[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  
+  const [selectedPet, setSelectedPet] = useState(petIdFromUrl || '')
+  const [selectedWalker, setSelectedWalker] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
-  const [duration, setDuration] = useState('30')
+  const [duration, setDuration] = useState(30)
+  const [specialInstructions, setSpecialInstructions] = useState('')
+  
+  const [toast, setToast] = useState<{show: boolean, type: 'success' | 'error', message: string}>({
+    show: false,
+    type: 'success',
+    message: ''
+  })
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [petsRes, walkersRes] = await Promise.all([
+        api.get('/pets'),
+        api.get('/walks/walkers/available')
+      ])
+
+      if (petsRes.data.success) {
+        setPets(petsRes.data.data.pets)
+      }
+
+      if (walkersRes.data.success) {
+        setWalkers(walkersRes.data.data.walkers)
+      }
+    } catch (err: any) {
+      console.error('Error fetching data:', err)
+      showToast('error', 'Failed to load data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ show: true, type, message })
+  }
+
+  const calculatePrice = () => {
+    const baseRate = 500 // KES per 30 minutes
+    return (baseRate / 30) * duration
+  }
+
+  const handleSubmit = async () => {
+    // Validation
+    if (!selectedPet) {
+      showToast('error', 'Please select a pet')
+      return
+    }
+    if (!selectedWalker) {
+      showToast('error', 'Please select a walker')
+      return
+    }
+    if (!selectedDate) {
+      showToast('error', 'Please select a date')
+      return
+    }
+    if (!selectedTime) {
+      showToast('error', 'Please select a time')
+      return
+    }
+
+    // Check if date is in the future
+    const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`)
+    if (selectedDateTime < new Date()) {
+      showToast('error', 'Please select a future date and time')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const response = await api.post('/walks/book', {
+        petId: selectedPet,
+        walkerId: selectedWalker,
+        scheduledDate: selectedDate,
+        scheduledTime: selectedTime,
+        duration,
+        specialInstructions
+      })
+
+      if (response.data.success) {
+        showToast('success', 'Walk booked successfully!')
+        setTimeout(() => {
+          navigate('/owner/active-walks')
+        }, 2000)
+      }
+    } catch (err: any) {
+      console.error('Error booking walk:', err)
+      showToast('error', err.response?.data?.message || 'Failed to book walk')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const selectedPetData = pets.find(p => p._id === selectedPet)
+  const selectedWalkerData = walkers.find(w => w._id === selectedWalker)
+
+  if (loading) {
+    return (
+      <OwnerLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader className="w-8 h-8 animate-spin text-purple-600" />
+          <span className="ml-2 text-gray-600">Loading...</span>
+        </div>
+      </OwnerLayout>
+    )
+  }
 
   return (
     <OwnerLayout>
@@ -25,31 +167,34 @@ export default function BookWalk() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Pet</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Pet *</label>
                   <select
                     value={selectedPet}
                     onChange={(e) => setSelectedPet(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                   >
                     <option value="">Choose a pet...</option>
-                    <option value="max">Max (Golden Retriever)</option>
-                    <option value="bella">Bella (Labrador)</option>
-                    <option value="charlie">Charlie (Beagle)</option>
+                    {pets.map(pet => (
+                      <option key={pet._id} value={pet._id}>
+                        {pet.petType.icon} {pet.name} ({pet.breed})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
                     <input
                       type="date"
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Time *</label>
                     <input
                       type="time"
                       value={selectedTime}
@@ -62,10 +207,11 @@ export default function BookWalk() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
                   <div className="grid grid-cols-3 gap-3">
-                    {['30', '45', '60'].map((mins) => (
+                    {[30, 45, 60].map((mins) => (
                       <button
                         key={mins}
                         onClick={() => setDuration(mins)}
+                        type="button"
                         className={`py-3 rounded-lg font-medium transition-all ${
                           duration === mins
                             ? 'bg-purple-600 text-white'
@@ -82,9 +228,13 @@ export default function BookWalk() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
                   <textarea
                     rows={3}
+                    value={specialInstructions}
+                    onChange={(e) => setSpecialInstructions(e.target.value)}
                     placeholder="Any special instructions for the walker..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none"
+                    maxLength={500}
                   ></textarea>
+                  <p className="text-xs text-gray-500 mt-1">{specialInstructions.length}/500 characters</p>
                 </div>
               </div>
             </div>
@@ -92,32 +242,20 @@ export default function BookWalk() {
             {/* Available Walkers */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Walkers Nearby</h2>
-              <div className="space-y-4">
-                <WalkerCard
-                  name="Sarah Johnson"
-                  rating="4.9"
-                  reviews="127"
-                  distance="1.2 km"
-                  price="KES 500"
-                  available={true}
-                />
-                <WalkerCard
-                  name="Mike Davis"
-                  rating="4.8"
-                  reviews="98"
-                  distance="2.1 km"
-                  price="KES 550"
-                  available={true}
-                />
-                <WalkerCard
-                  name="Emma Wilson"
-                  rating="4.9"
-                  reviews="85"
-                  distance="3.5 km"
-                  price="KES 600"
-                  available={false}
-                />
-              </div>
+              {walkers.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No walkers available at the moment</p>
+              ) : (
+                <div className="space-y-4">
+                  {walkers.map(walker => (
+                    <WalkerCard
+                      key={walker._id}
+                      walker={walker}
+                      isSelected={selectedWalker === walker._id}
+                      onSelect={() => setSelectedWalker(walker._id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -129,7 +267,11 @@ export default function BookWalk() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-purple-100">Pet</span>
-                  <span className="font-semibold">{selectedPet || 'Not selected'}</span>
+                  <span className="font-semibold">{selectedPetData ? selectedPetData.name : 'Not selected'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-100">Walker</span>
+                  <span className="font-semibold">{selectedWalkerData ? selectedWalkerData.name : 'Not selected'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-purple-100">Date</span>
@@ -148,59 +290,81 @@ export default function BookWalk() {
               <div className="border-t border-purple-400 pt-4 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="text-lg">Total</span>
-                  <span className="text-2xl font-bold">KES 500</span>
+                  <span className="text-2xl font-bold">KES {calculatePrice().toFixed(0)}</span>
                 </div>
               </div>
 
-              <button className="w-full py-3 bg-white text-purple-600 rounded-lg font-bold hover:bg-purple-50 transition-all">
-                Confirm Booking
+              <button 
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full py-3 bg-white text-purple-600 rounded-lg font-bold hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Booking...
+                  </>
+                ) : (
+                  'Confirm Booking'
+                )}
               </button>
             </div>
           </div>
         </div>
+
+        {/* Toast Notification */}
+        <Toast
+          show={toast.show}
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast({ show: false, type: 'success', message: '' })}
+        />
       </div>
     </OwnerLayout>
   )
 }
 
 interface WalkerCardProps {
-  name: string
-  rating: string
-  reviews: string
-  distance: string
-  price: string
-  available: boolean
+  walker: Walker
+  isSelected: boolean
+  onSelect: () => void
 }
 
-function WalkerCard({ name, rating, reviews, distance, price, available }: WalkerCardProps) {
+function WalkerCard({ walker, isSelected, onSelect }: WalkerCardProps) {
   return (
-    <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-all">
-      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
-        {name.charAt(0)}
+    <div className={`flex items-center gap-4 p-4 border-2 rounded-lg transition-all cursor-pointer ${
+      isSelected ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'
+    }`}
+    onClick={onSelect}
+    >
+      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+        {walker.profileImage ? (
+          <img src={walker.profileImage} alt={walker.name} className="w-full h-full object-cover rounded-full" />
+        ) : (
+          walker.name.charAt(0).toUpperCase()
+        )}
       </div>
       <div className="flex-1">
-        <h4 className="font-semibold text-gray-900">{name}</h4>
+        <h4 className="font-semibold text-gray-900">{walker.name}</h4>
         <div className="flex items-center gap-3 mt-1">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium">{rating}</span>
-            <span className="text-sm text-gray-500">({reviews})</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm text-gray-500">
-            <MapPin className="w-4 h-4" />
-            {distance}
+            <span className="text-sm font-medium">{Number(walker.rating || 5).toFixed(1)}</span>
+            <span className="text-sm text-gray-500">({walker.totalWalks || 0} walks)</span>
           </div>
         </div>
       </div>
       <div className="text-right">
-        <p className="text-lg font-bold text-purple-600">{price}</p>
-        {available ? (
-          <button className="mt-2 px-4 py-1 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700">
-            Select
-          </button>
-        ) : (
-          <span className="text-sm text-gray-500">Unavailable</span>
-        )}
+        <p className="text-lg font-bold text-purple-600">KES 500</p>
+        <button 
+          className={`mt-2 px-4 py-1 rounded-lg text-sm font-medium transition-all ${
+            isSelected 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          {isSelected ? 'Selected' : 'Select'}
+        </button>
       </div>
     </div>
   )
