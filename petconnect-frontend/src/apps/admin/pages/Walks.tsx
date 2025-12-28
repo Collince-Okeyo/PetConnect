@@ -405,139 +405,137 @@ function WalkDetailsModal({ walk, formatDate, formatTime, onClose }: WalkDetails
   const config = statusConfig[walk.status as keyof typeof statusConfig] || statusConfig.pending
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div 
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-          onClick={onClose}
-        ></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Background overlay */}
+      <div 
+        className="fixed inset-0 bg-opacity-50"
+        onClick={onClose}
+      ></div>
 
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
-            <h3 className="text-xl font-bold text-white">Walk Details</h3>
-            <p className="text-indigo-100 text-sm mt-1">Walk ID: #{walk._id.slice(-6).toUpperCase()}</p>
-          </div>
+      {/* Modal panel */}
+      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full z-50 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+          <h3 className="text-xl font-bold text-white">Walk Details</h3>
+          <p className="text-indigo-100 text-sm mt-1">Walk ID: #{walk._id.slice(-6).toUpperCase()}</p>
+        </div>
 
-          {/* Content */}
-          <div className="bg-white px-6 py-6">
-            <div className="grid grid-cols-2 gap-6">
-              {/* Pet Information */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Pet Information</h4>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-500">Pet Name</p>
-                    <p className="text-sm font-medium text-gray-900">{walk.pet.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Breed</p>
-                    <p className="text-sm font-medium text-gray-900">{walk.pet.breed}</p>
-                  </div>
+        {/* Content */}
+        <div className="bg-white px-6 py-6 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Pet Information */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Pet Information</h4>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-500">Pet Name</p>
+                  <p className="text-sm font-medium text-gray-900">{walk.pet.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Breed</p>
+                  <p className="text-sm font-medium text-gray-900">{walk.pet.breed}</p>
                 </div>
               </div>
+            </div>
 
-              {/* Owner Information */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Owner Information</h4>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-500">Name</p>
-                    <p className="text-sm font-medium text-gray-900">{walk.owner.name}</p>
-                  </div>
+            {/* Owner Information */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Owner Information</h4>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-500">Name</p>
+                  <p className="text-sm font-medium text-gray-900">{walk.owner.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Email</p>
+                  <p className="text-sm font-medium text-gray-900">{walk.owner.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Walker Information */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Walker Information</h4>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-500">Name</p>
+                  <p className="text-sm font-medium text-gray-900">{walk.walker?.name || 'Unassigned'}</p>
+                </div>
+                {walk.walker && (
                   <div>
                     <p className="text-xs text-gray-500">Email</p>
-                    <p className="text-sm font-medium text-gray-900">{walk.owner.email}</p>
+                    <p className="text-sm font-medium text-gray-900">{walk.walker.email}</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Walker Information */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Walker Information</h4>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-500">Name</p>
-                    <p className="text-sm font-medium text-gray-900">{walk.walker?.name || 'Unassigned'}</p>
-                  </div>
-                  {walk.walker && (
-                    <div>
-                      <p className="text-xs text-gray-500">Email</p>
-                      <p className="text-sm font-medium text-gray-900">{walk.walker.email}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Schedule Information */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Schedule</h4>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-500">Date</p>
-                    <p className="text-sm font-medium text-gray-900">{formatDate(walk.scheduledDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Time</p>
-                    <p className="text-sm font-medium text-gray-900">{formatTime(walk.scheduledTime)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Duration</p>
-                    <p className="text-sm font-medium text-gray-900">{walk.duration} minutes</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
-            {/* Location Information */}
+            {/* Schedule Information */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Schedule</h4>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-500">Date</p>
+                  <p className="text-sm font-medium text-gray-900">{formatDate(walk.scheduledDate)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Time</p>
+                  <p className="text-sm font-medium text-gray-900">{formatTime(walk.scheduledTime)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Duration</p>
+                  <p className="text-sm font-medium text-gray-900">{walk.duration} minutes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Location Information */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Location Details</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-500">Pickup Location</p>
+                <p className="text-sm font-medium text-gray-900">{walk.pickupLocation || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Dropoff Location</p>
+                <p className="text-sm font-medium text-gray-900">{walk.dropoffLocation || 'Same as pickup'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Special Instructions */}
+          {walk.specialInstructions && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Location Details</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500">Pickup Location</p>
-                  <p className="text-sm font-medium text-gray-900">{walk.pickupLocation || 'Not specified'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Dropoff Location</p>
-                  <p className="text-sm font-medium text-gray-900">{walk.dropoffLocation || 'Same as pickup'}</p>
-                </div>
-              </div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase mb-2">Special Instructions</h4>
+              <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{walk.specialInstructions}</p>
             </div>
+          )}
 
-            {/* Special Instructions */}
-            {walk.specialInstructions && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-500 uppercase mb-2">Special Instructions</h4>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{walk.specialInstructions}</p>
-              </div>
-            )}
-
-            {/* Payment & Status */}
-            <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-gray-500">Amount</p>
-                <p className="text-2xl font-bold text-indigo-600">KES {walk.price.toFixed(0)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-2">Status</p>
-                <span className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${config.color}`}>
-                  {config.label}
-                </span>
-              </div>
+          {/* Payment & Status */}
+          <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-500">Amount</p>
+              <p className="text-2xl font-bold text-indigo-600">KES {walk.price.toFixed(0)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Status</p>
+              <span className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${config.color}`}>
+                {config.label}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Footer */}
-          <div className="bg-gray-50 px-6 py-4 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Close
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="bg-gray-50 px-6 py-4 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

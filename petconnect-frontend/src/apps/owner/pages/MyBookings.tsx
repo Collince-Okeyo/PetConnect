@@ -57,6 +57,7 @@ export default function MyBookings() {
     type: 'success',
     message: ''
   })
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchWalks()
@@ -69,15 +70,17 @@ export default function MyBookings() {
   const fetchWalks = async () => {
     try {
       setLoading(true)
+      setError(null)
       const response = await api.get('/walks/my-walks')
       
       if (response.data.success) {
-        const allWalks = response.data.data.walks
+        const allWalks = response.data.data.walks || []
         setWalks(allWalks)
         calculateStats(allWalks)
       }
     } catch (err: any) {
       console.error('Error fetching walks:', err)
+      setError(err.response?.data?.message || 'Failed to load bookings')
       showToast('error', 'Failed to load bookings')
     } finally {
       setLoading(false)
@@ -85,6 +88,10 @@ export default function MyBookings() {
   }
 
   const calculateStats = (allWalks: Walk[]) => {
+    if (!allWalks || !Array.isArray(allWalks)) {
+      return
+    }
+    
     const now = new Date()
     
     const stats = {
@@ -137,9 +144,12 @@ export default function MyBookings() {
   }
 
   const handleCancelClick = (walk: Walk) => {
+    console.log('Cancel button clicked for walk:', walk._id)
+    console.log('Setting modal to show...')
     setSelectedWalk(walk)
     setShowCancelModal(true)
     setCancellationReason('')
+    console.log('Modal should be visible now')
   }
 
   const handleCancelWalk = async () => {
@@ -195,6 +205,23 @@ export default function MyBookings() {
         <div className="flex items-center justify-center py-12">
           <Loader className="w-8 h-8 animate-spin text-purple-600" />
           <span className="ml-2 text-gray-600">Loading bookings...</span>
+        </div>
+      </OwnerLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <OwnerLayout>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-red-900 font-bold mb-2">Error Loading Bookings</h3>
+          <p className="text-red-700">{error}</p>
+          <button
+            onClick={fetchWalks}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Try Again
+          </button>
         </div>
       </OwnerLayout>
     )
@@ -298,67 +325,67 @@ export default function MyBookings() {
 
         {/* Cancel Modal */}
         {showCancelModal && selectedWalk && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-              <div 
-                className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-                onClick={() => !cancelling && setShowCancelModal(false)}
-              ></div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-opacity-50"
+              onClick={() => !cancelling && setShowCancelModal(false)}
+            ></div>
 
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div className="bg-white px-6 py-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">Cancel Walk</h3>
-                    <button
-                      onClick={() => !cancelling && setShowCancelModal(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                      disabled={cancelling}
-                    >
-                      <X className="w-6 h-6" />
-                    </button>
-                  </div>
+            {/* Modal Content */}
+            <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full z-50">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">Cancel Walk</h3>
+                  <button
+                    onClick={() => !cancelling && setShowCancelModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                    disabled={cancelling}
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
 
-                  <p className="text-gray-600 mb-4">
-                    Are you sure you want to cancel this walk for <strong>{selectedWalk.pet.name}</strong>?
-                  </p>
+                <p className="text-gray-600 mb-4">
+                  Are you sure you want to cancel this walk for <strong>{selectedWalk.pet.name}</strong>?
+                </p>
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason for cancellation (optional)
-                    </label>
-                    <textarea
-                      value={cancellationReason}
-                      onChange={(e) => setCancellationReason(e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none"
-                      placeholder="Let us know why you're cancelling..."
-                      disabled={cancelling}
-                    ></textarea>
-                  </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for cancellation (optional)
+                  </label>
+                  <textarea
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none"
+                    placeholder="Let us know why you're cancelling..."
+                    disabled={cancelling}
+                  ></textarea>
+                </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowCancelModal(false)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                      disabled={cancelling}
-                    >
-                      Keep Booking
-                    </button>
-                    <button
-                      onClick={handleCancelWalk}
-                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      disabled={cancelling}
-                    >
-                      {cancelling ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          Cancelling...
-                        </>
-                      ) : (
-                        'Cancel Walk'
-                      )}
-                    </button>
-                  </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowCancelModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    disabled={cancelling}
+                  >
+                    Keep Booking
+                  </button>
+                  <button
+                    onClick={handleCancelWalk}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={cancelling}
+                  >
+                    {cancelling ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      'Cancel Walk'
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -414,6 +441,7 @@ interface WalkCardProps {
 }
 
 function WalkCard({ walk, formatDate, formatTime, canCancel, onCancel }: WalkCardProps) {
+  console.log('Is True: ', canCancel)
   const statusConfig = {
     pending: { color: 'bg-yellow-100 text-yellow-600 border-yellow-200', icon: <AlertCircle className="w-4 h-4" />, label: 'Pending' },
     unassigned: { color: 'bg-orange-100 text-orange-600 border-orange-200', icon: <AlertCircle className="w-4 h-4" />, label: 'Unassigned' },
@@ -471,7 +499,10 @@ function WalkCard({ walk, formatDate, formatTime, canCancel, onCancel }: WalkCar
 
       {canCancel && (
         <button
-          onClick={onCancel}
+          onClick={() => {
+            console.log('Cancel button clicked!')
+            onCancel()
+          }}
           className="w-full py-2 border border-red-300 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
         >
           <XCircle className="w-4 h-4" />

@@ -132,7 +132,7 @@ export default function BookWalk() {
       if (response.data.success) {
         showToast('success', 'Walk booked successfully!')
         setTimeout(() => {
-          navigate('/owner/active-walks')
+          navigate('/owner/my-bookings')
         }, 2000)
       }
     } catch (err: any) {
