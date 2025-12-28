@@ -728,6 +728,180 @@ const cancelWalkByOwner = async (req, res) => {
   }
 };
 
+// @desc    Update walk location (GPS tracking)
+// @route   PUT /api/walks/:id/location
+// @access  Private/Walker
+const updateWalkLocation = async (req, res) => {
+  try {
+    const { latitude, longitude, accuracy, speed } = req.body;
+
+    const walk = await Walk.findById(req.params.id);
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Verify walker is assigned and is the current user
+    if (!walk.walker || walk.walker.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to update this walk location'
+      });
+    }
+
+    // Verify status is in-progress
+    if (walk.status !== 'in-progress') {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only update location for in-progress walks'
+      });
+    }
+
+    const { calculateDistance } = require('../utils/geoUtils');
+
+    // Calculate distance from last point if exists
+    let distanceIncrement = 0;
+    if (walk.currentLocation && walk.currentLocation.coordinates && 
+        walk.currentLocation.coordinates[0] !== 0 && walk.currentLocation.coordinates[1] !== 0) {
+      const [lastLon, lastLat] = walk.currentLocation.coordinates;
+      distanceIncrement = calculateDistance(lastLat, lastLon, latitude, longitude);
+    }
+
+    // Update current location
+    walk.currentLocation = {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+      timestamp: new Date()
+    };
+
+    // Add to route (limit to 500 points to prevent excessive data)
+    walk.route.push({
+      location: {
+        type: 'Point',
+        coordinates: [longitude, latitude]
+      },
+      timestamp: new Date(),
+      speed: speed || 0,
+      accuracy: accuracy || 0
+    });
+
+    // Keep only last 500 points
+    if (walk.route.length > 500) {
+      walk.route = walk.route.slice(-500);
+    }
+
+    // Update total distance
+    walk.totalDistance += distanceIncrement;
+
+    await walk.save();
+
+    res.json({
+      success: true,
+      data: {
+        currentLocation: {
+          latitude,
+          longitude,
+          timestamp: walk.currentLocation.timestamp
+        },
+        totalDistance: walk.totalDistance,
+        routePointsCount: walk.route.length
+      },
+      message: 'Location updated successfully'
+    });
+  } catch (error) {
+    console.error('Update walk location error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating location'
+    });
+  }
+};
+
+// @desc    Get walk location and route
+// @route   GET /api/walks/:id/location
+// @access  Private (Owner/Walker/Admin)
+const getWalkLocation = async (req, res) => {
+  try {
+    const walk = await Walk.findById(req.params.id)
+      .populate('pet', 'name')
+      .populate('owner', 'name')
+      .populate('walker', 'name');
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Verify authorization (owner, walker, or admin)
+    const isOwner = walk.owner._id.toString() === req.user._id.toString();
+    const isWalker = walk.walker && walk.walker._id.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isWalker && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this walk location'
+      });
+    }
+
+    // Format current location
+    let currentLocation = null;
+    if (walk.currentLocation && walk.currentLocation.coordinates) {
+      const [lon, lat] = walk.currentLocation.coordinates;
+      if (lat !== 0 && lon !== 0) {
+        currentLocation = {
+          latitude: lat,
+          longitude: lon,
+          timestamp: walk.currentLocation.timestamp
+        };
+      }
+    }
+
+    // Format route
+    const route = walk.route.map(point => ({
+      latitude: point.location.coordinates[1],
+      longitude: point.location.coordinates[0],
+      timestamp: point.timestamp,
+      speed: point.speed,
+      accuracy: point.accuracy
+    }));
+
+    // Calculate duration if walk is in progress
+    let duration = 0;
+    if (walk.startedAt) {
+      const endTime = walk.completedAt || new Date();
+      duration = Math.floor((endTime - walk.startedAt) / 1000); // in seconds
+    }
+
+    res.json({
+      success: true,
+      data: {
+        walkId: walk._id,
+        status: walk.status,
+        currentLocation,
+        route,
+        totalDistance: walk.totalDistance,
+        duration,
+        startedAt: walk.startedAt,
+        estimatedEndTime: walk.estimatedEndTime,
+        pet: walk.pet,
+        walker: walk.walker
+      }
+    });
+  } catch (error) {
+    console.error('Get walk location error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching location'
+    });
+  }
+};
+
 module.exports = {
   getAvailableWalkers,
   createWalkBooking,
@@ -738,5 +912,7 @@ module.exports = {
   declineWalk,
   startWalk,
   completeWalk,
-  cancelWalkByOwner
+  cancelWalkByOwner,
+  updateWalkLocation,
+  getWalkLocation
 };

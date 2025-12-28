@@ -11,7 +11,9 @@ const {
   declineWalk,
   startWalk,
   completeWalk,
-  cancelWalkByOwner
+  cancelWalkByOwner,
+  updateWalkLocation,
+  getWalkLocation
 } = require('../controllers/walkController');
 
 // @route   GET /api/walks/walkers/available
@@ -63,5 +65,15 @@ router.put('/:id/complete', protect, authorize('walker'), completeWalk);
 // @desc    Cancel walk by owner
 // @access  Private/Owner
 router.put('/:id/cancel-by-owner', protect, authorize('owner'), cancelWalkByOwner);
+
+// @route   PUT /api/walks/:id/location
+// @desc    Update walk location (GPS tracking)
+// @access  Private/Walker
+router.put('/:id/location', protect, authorize('walker'), updateWalkLocation);
+
+// @route   GET /api/walks/:id/location
+// @desc    Get walk location and route
+// @access  Private (Owner/Walker/Admin)
+router.get('/:id/location', protect, getWalkLocation);
 
 module.exports = router;
