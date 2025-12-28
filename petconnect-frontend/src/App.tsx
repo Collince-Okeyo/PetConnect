@@ -24,6 +24,7 @@ import AdminProfile from './apps/admin/pages/Profile'
 import OwnerDashboard from './apps/owner/pages/Dashboard'
 import OwnerPets from './apps/owner/pages/Pets'
 import OwnerBookWalk from './apps/owner/pages/BookWalk'
+import OwnerMyBookings from './apps/owner/pages/MyBookings'
 import OwnerActiveWalks from './apps/owner/pages/ActiveWalks'
 import OwnerFindWalkers from './apps/owner/pages/FindWalkers'
 import OwnerWallet from './apps/owner/pages/Wallet'
@@ -93,6 +94,7 @@ function App() {
           <Route path="/owner/dashboard" element={<OwnerDashboard />} />
           <Route path="/owner/pets" element={<OwnerPets />} />
           <Route path="/owner/book-walk" element={<OwnerBookWalk />} />
+          <Route path="/owner/my-bookings" element={<OwnerMyBookings />} />
           <Route path="/owner/active-walks" element={<OwnerActiveWalks />} />
           <Route path="/owner/walkers" element={<OwnerFindWalkers />} />
           <Route path="/owner/wallet" element={<OwnerWallet />} />

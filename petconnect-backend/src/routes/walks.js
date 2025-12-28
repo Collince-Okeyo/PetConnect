@@ -8,7 +8,10 @@ const {
   getWalkById,
   cancelWalk,
   acceptWalk,
-  declineWalk
+  declineWalk,
+  startWalk,
+  completeWalk,
+  cancelWalkByOwner
 } = require('../controllers/walkController');
 
 // @route   GET /api/walks/walkers/available
@@ -45,5 +48,20 @@ router.put('/:id/accept', protect, authorize('walker'), acceptWalk);
 // @desc    Decline walk request (walker only)
 // @access  Private/Walker
 router.put('/:id/decline', protect, authorize('walker'), declineWalk);
+
+// @route   PUT /api/walks/:id/start
+// @desc    Start walk (walker only)
+// @access  Private/Walker
+router.put('/:id/start', protect, authorize('walker'), startWalk);
+
+// @route   PUT /api/walks/:id/complete
+// @desc    Complete walk (walker only)
+// @access  Private/Walker
+router.put('/:id/complete', protect, authorize('walker'), completeWalk);
+
+// @route   PUT /api/walks/:id/cancel-by-owner
+// @desc    Cancel walk by owner
+// @access  Private/Owner
+router.put('/:id/cancel-by-owner', protect, authorize('owner'), cancelWalkByOwner);
 
 module.exports = router;

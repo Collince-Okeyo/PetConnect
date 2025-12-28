@@ -83,6 +83,7 @@ app.use('/api/pet-types', require('./src/routes/petTypes'));
 app.use('/api/temperaments', require('./src/routes/temperaments'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/walks', require('./src/routes/walks'));
+app.use('/api/notifications', require('./src/routes/notifications'));
 // app.use('/api/payments', require('./src/routes/payments'));
 
 // Error handling middleware

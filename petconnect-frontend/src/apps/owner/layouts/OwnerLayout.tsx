@@ -13,10 +13,10 @@ import {
   Settings,
   LogOut,
   Menu,
-  Bell,
   Search,
   Wallet
 } from 'lucide-react'
+import NotificationBell from '../../../components/NotificationBell'
 
 interface OwnerLayoutProps {
   children: ReactNode
@@ -37,6 +37,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/owner/dashboard' },
     { icon: Dog, label: 'My Pets', path: '/owner/pets' },
     { icon: Calendar, label: 'Book Walk', path: '/owner/book-walk' },
+    { icon: CreditCard, label: 'My Bookings', path: '/owner/my-bookings' },
     { icon: MapPin, label: 'Active Walks', path: '/owner/active-walks' },
     { icon: User, label: 'Find Walkers', path: '/owner/walkers' },
     { icon: Wallet, label: 'Wallet', path: '/owner/wallet' },
@@ -129,10 +130,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-900">{user?.name || 'Pet Owner'}</p>

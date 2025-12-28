@@ -1,179 +1,112 @@
-const twilio = require('twilio');
+const AfricasTalking = require('africastalking');
 
-// Initialize Twilio client
-const getTwilioClient = () => {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  
-  if (!accountSid || !authToken) {
-    console.warn('Twilio credentials not configured');
-    return null;
+// Check if we have credentials
+const hasCredentials = !!(process.env.AFRICAS_TALKING_API_KEY && process.env.AFRICAS_TALKING_USERNAME);
+
+// Initialize Africa's Talking only if credentials are available
+let sms = null;
+if (hasCredentials) {
+  const africasTalking = AfricasTalking({
+    apiKey: process.env.AFRICAS_TALKING_API_KEY,
+    username: process.env.AFRICAS_TALKING_USERNAME,
+  });
+  sms = africasTalking.SMS;
+  console.log('✅ Africa\'s Talking SMS service initialized');
+} else {
+  console.log('⚠️  Africa\'s Talking credentials not found - running in development mode (SMS will be logged to console)');
+}
+
+/**
+ * Format phone number for Kenya (+254)
+ */
+const formatPhoneNumber = (phoneNumber) => {
+  if (phoneNumber.startsWith('0')) {
+    return '+254' + phoneNumber.substring(1);
+  } else if (!phoneNumber.startsWith('+')) {
+    return '+254' + phoneNumber;
   }
-  
-  return twilio(accountSid, authToken);
+  return phoneNumber;
+};
+
+/**
+ * Send SMS using Africa's Talking
+ */
+const sendSMS = async (to, message) => {
+  try {
+    const formattedPhone = formatPhoneNumber(to);
+
+    if (!hasCredentials) {
+      console.log('\n📱 SMS (Development Mode):');
+      console.log(`To: ${formattedPhone}`);
+      console.log(`Message: ${message}`);
+      console.log('---\n');
+      return { success: true, message: 'SMS logged to console (dev mode)', development: true };
+    }
+
+    const options = {
+      to: [formattedPhone],
+      message,
+      from: process.env.AFRICAS_TALKING_SENDER_ID || undefined
+    };
+
+    const response = await sms.send(options);
+    console.log('✅ SMS sent successfully:', response);
+    return { success: true, data: response };
+  } catch (error) {
+    console.error('Error sending SMS:', error);
+    
+    // In development, still log SMS even if sending fails
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📱 SMS for ${to}: ${message} (Africa's Talking failed, logging for dev)`);
+      return { success: true, message: 'SMS logged to console (error in dev mode)', development: true };
+    }
+    
+    return { success: false, error: error.message };
+  }
 };
 
 // Send SMS OTP
 const sendSMSOTP = async (phoneNumber, otp) => {
-  try {
-    const client = getTwilioClient();
-    
-    if (!client) {
-      // In development/sandbox mode, log OTP to console
-      console.log(`📱 SMS OTP for ${phoneNumber}: ${otp}`);
-      return { 
-        success: true, 
-        message: 'OTP logged to console (Twilio not configured)',
-        development: true 
-      };
-    }
-
-    // Format phone number for Kenyan numbers
-    let formattedPhone = phoneNumber;
-    if (phoneNumber.startsWith('0')) {
-      formattedPhone = '+254' + phoneNumber.substring(1);
-    } else if (!phoneNumber.startsWith('+')) {
-      formattedPhone = '+254' + phoneNumber;
-    }
-
-    const message = await client.messages.create({
-      body: `Your PetConnect verification code is: ${otp}. This code will expire in 10 minutes. Do not share this code with anyone.`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedPhone
-    });
-
-    console.log(`✅ SMS sent successfully. SID: ${message.sid}`);
-    return { 
-      success: true, 
-      message: 'OTP sent successfully',
-      sid: message.sid 
-    };
-  } catch (error) {
-    console.error('SMS sending error:', error);
-    
-    // In development, still log OTP even if Twilio fails
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📱 SMS OTP for ${phoneNumber}: ${otp} (Twilio failed, logging for dev)`);
-      return { 
-        success: true, 
-        message: 'OTP logged to console (Twilio error in dev mode)',
-        development: true 
-      };
-    }
-    
-    return { 
-      success: false, 
-      message: 'Failed to send SMS',
-      error: error.message 
-    };
-  }
+  const message = `Your PetConnect verification code is: ${otp}. This code will expire in 10 minutes. Do not share this code with anyone.`;
+  return await sendSMS(phoneNumber, message);
 };
 
 // Send password reset SMS
 const sendPasswordResetSMS = async (phoneNumber, resetCode) => {
-  try {
-    const client = getTwilioClient();
-    
-    if (!client) {
-      console.log(`📱 Password Reset Code for ${phoneNumber}: ${resetCode}`);
-      return { 
-        success: true, 
-        message: 'Reset code logged to console (Twilio not configured)',
-        development: true 
-      };
-    }
-
-    // Format phone number
-    let formattedPhone = phoneNumber;
-    if (phoneNumber.startsWith('0')) {
-      formattedPhone = '+254' + phoneNumber.substring(1);
-    } else if (!phoneNumber.startsWith('+')) {
-      formattedPhone = '+254' + phoneNumber;
-    }
-
-    const message = await client.messages.create({
-      body: `Your PetConnect password reset code is: ${resetCode}. This code will expire in 10 minutes. If you didn't request this, please ignore this message.`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedPhone
-    });
-
-    console.log(`✅ Password reset SMS sent. SID: ${message.sid}`);
-    return { 
-      success: true, 
-      message: 'Reset code sent successfully',
-      sid: message.sid 
-    };
-  } catch (error) {
-    console.error('SMS sending error:', error);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📱 Password Reset Code for ${phoneNumber}: ${resetCode} (Twilio failed, logging for dev)`);
-      return { 
-        success: true, 
-        message: 'Reset code logged to console (Twilio error in dev mode)',
-        development: true 
-      };
-    }
-    
-    return { 
-      success: false, 
-      message: 'Failed to send SMS',
-      error: error.message 
-    };
-  }
+  const message = `Your PetConnect password reset code is: ${resetCode}. This code will expire in 10 minutes. If you didn't request this, please ignore this message.`;
+  return await sendSMS(phoneNumber, message);
 };
 
 // Send walk notification SMS
-const sendWalkNotificationSMS = async (phoneNumber, message) => {
+const sendWalkNotificationSMS = async (phoneNumber, walkId, type, details = {}) => {
   try {
-    const client = getTwilioClient();
-    
-    if (!client) {
-      console.log(`📱 Walk Notification for ${phoneNumber}: ${message}`);
-      return { 
-        success: true, 
-        message: 'Notification logged to console (Twilio not configured)',
-        development: true 
-      };
+    let message = '';
+    const shortId = walkId.slice(-6).toUpperCase();
+
+    switch (type) {
+      case 'created':
+        message = `New walk request #${shortId} created for ${details.petName}. Check your dashboard for details.`;
+        break;
+      case 'accepted':
+        message = `Your walk request #${shortId} for ${details.petName} has been accepted by ${details.walkerName}. Scheduled for ${details.date} at ${details.time}.`;
+        break;
+      case 'started':
+        message = `${details.walkerName} has started walking ${details.petName}. Estimated completion: ${details.estimatedEnd}.`;
+        break;
+      case 'completed':
+        message = `Walk #${shortId} completed! ${details.petName} has been safely returned. Thank you for using PetConnect.`;
+        break;
+      case 'cancelled':
+        message = `Walk request #${shortId} for ${details.petName} has been cancelled by the owner.${details.reason ? ' Reason: ' + details.reason : ''}`;
+        break;
+      default:
+        message = `Walk #${shortId} status update. Check your dashboard for details.`;
     }
 
-    // Format phone number
-    let formattedPhone = phoneNumber;
-    if (phoneNumber.startsWith('0')) {
-      formattedPhone = '+254' + phoneNumber.substring(1);
-    } else if (!phoneNumber.startsWith('+')) {
-      formattedPhone = '+254' + phoneNumber;
-    }
-
-    const twilioMessage = await client.messages.create({
-      body: `PetConnect: ${message}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedPhone
-    });
-
-    console.log(`✅ Notification SMS sent. SID: ${twilioMessage.sid}`);
-    return { 
-      success: true, 
-      message: 'Notification sent successfully',
-      sid: twilioMessage.sid 
-    };
+    return await sendSMS(phoneNumber, message);
   } catch (error) {
-    console.error('SMS sending error:', error);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📱 Walk Notification for ${phoneNumber}: ${message} (Twilio failed, logging for dev)`);
-      return { 
-        success: true, 
-        message: 'Notification logged to console (Twilio error in dev mode)',
-        development: true 
-      };
-    }
-    
-    return { 
-      success: false, 
-      message: 'Failed to send notification',
-      error: error.message 
-    };
+    console.error('Error sending walk notification SMS:', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -184,6 +117,7 @@ const isValidKenyanPhone = (phoneNumber) => {
 };
 
 module.exports = {
+  sendSMS,
   sendSMSOTP,
   sendPasswordResetSMS,
   sendWalkNotificationSMS,

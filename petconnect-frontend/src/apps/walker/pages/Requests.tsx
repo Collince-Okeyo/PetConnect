@@ -32,6 +32,10 @@ interface Walk {
   pickupLocation?: string
   dropoffLocation?: string
   status: string
+  startedAt?: string
+  completedAt?: string
+  estimatedEndTime?: string
+  createdAt?: string
 }
 
 type TabType = 'pending' | 'confirmed' | 'completed'
@@ -127,6 +131,40 @@ export default function Requests() {
     } catch (err: any) {
       console.error('Error declining walk:', err)
       showToast('error', err.response?.data?.message || 'Failed to decline walk')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleStartWalk = async (walkId: string) => {
+    try {
+      setProcessingId(walkId)
+      const response = await api.put(`/walks/${walkId}/start`)
+      
+      if (response.data.success) {
+        showToast('success', 'Walk started! Timer is running.')
+        fetchWalkRequests() // Refresh the list
+      }
+    } catch (err: any) {
+      console.error('Error starting walk:', err)
+      showToast('error', err.response?.data?.message || 'Failed to start walk')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleCompleteWalk = async (walkId: string) => {
+    try {
+      setProcessingId(walkId)
+      const response = await api.put(`/walks/${walkId}/complete`)
+      
+      if (response.data.success) {
+        showToast('success', 'Walk completed successfully!')
+        fetchWalkRequests() // Refresh the list
+      }
+    } catch (err: any) {
+      console.error('Error completing walk:', err)
+      showToast('error', err.response?.data?.message || 'Failed to complete walk')
     } finally {
       setProcessingId(null)
     }
@@ -256,6 +294,8 @@ export default function Requests() {
                 walk={walk}
                 onAccept={handleAccept}
                 onDecline={handleDecline}
+                onStart={handleStartWalk}
+                onComplete={handleCompleteWalk}
                 isProcessing={processingId === walk._id}
                 formatDate={formatDate}
                 formatTime={formatTime}
@@ -295,13 +335,34 @@ interface RequestCardProps {
   walk: Walk
   onAccept: (walkId: string) => void
   onDecline: (walkId: string) => void
+  onStart?: (walkId: string) => void
+  onComplete?: (walkId: string) => void
   isProcessing: boolean
   formatDate: (date: string) => string
   formatTime: (time: string) => string
   showActions: boolean
 }
 
-function RequestCard({ walk, onAccept, onDecline, isProcessing, formatDate, formatTime, showActions }: RequestCardProps) {
+function RequestCard({ walk, onAccept, onDecline, onStart, onComplete, isProcessing, formatDate, formatTime, showActions }: RequestCardProps) {
+  const [elapsedTime, setElapsedTime] = useState(0)
+
+  // Timer for in-progress walks
+  useEffect(() => {
+    if (walk.status === 'in-progress' && walk.startedAt) {
+      const interval = setInterval(() => {
+        const started = new Date(walk.startedAt!).getTime()
+        const now = new Date().getTime()
+        setElapsedTime(Math.floor((now - started) / 1000))
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [walk.status, walk.startedAt])
+
+  const formatElapsedTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
   const petIcon = walk.pet.photos && walk.pet.photos.length > 0
     ? `http://localhost:5000/${walk.pet.photos[0].url}`
     : walk.pet.petType.icon
@@ -380,6 +441,20 @@ function RequestCard({ walk, onAccept, onDecline, isProcessing, formatDate, form
         </div>
       )}
 
+      {/* Timer for in-progress walks */}
+      {walk.status === 'in-progress' && (
+        <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-blue-600 font-medium mb-1">Walk in Progress</p>
+              <p className="text-2xl font-bold text-blue-700">{formatElapsedTime(elapsedTime)}</p>
+            </div>
+            <Loader className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        </div>
+      )}
+
+      {/* Actions based on status */}
       {showActions && (
         <div className="flex gap-3">
           <button 
@@ -411,6 +486,42 @@ function RequestCard({ walk, onAccept, onDecline, isProcessing, formatDate, form
             )}
           </button>
         </div>
+      )}
+
+      {/* Start Walk button for confirmed walks */}
+      {walk.status === 'confirmed' && onStart && (
+        <button
+          onClick={() => onStart(walk._id)}
+          disabled={isProcessing}
+          className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isProcessing ? (
+            <Loader className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <MapPin className="w-5 h-5" />
+              Start Walk
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Complete Walk button for in-progress walks */}
+      {walk.status === 'in-progress' && onComplete && (
+        <button
+          onClick={() => onComplete(walk._id)}
+          disabled={isProcessing}
+          className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isProcessing ? (
+            <Loader className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <Check className="w-5 h-5" />
+              Complete Walk
+            </>
+          )}
+        </button>
       )}
     </div>
   )

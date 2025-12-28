@@ -82,6 +82,45 @@ const walkSchema = new mongoose.Schema({
   },
   cancelledAt: {
     type: Date
+  },
+  startedAt: {
+    type: Date
+  },
+  completedAt: {
+    type: Date
+  },
+  estimatedEndTime: {
+    type: Date
+  },
+  // GPS Tracking fields
+  currentLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0]
+    },
+    timestamp: Date
+  },
+  route: [{
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: [Number] // [longitude, latitude]
+    },
+    timestamp: Date,
+    speed: Number, // km/h
+    accuracy: Number // meters
+  }],
+  totalDistance: {
+    type: Number,
+    default: 0 // in kilometers
   }
 }, {
   timestamps: true
@@ -91,6 +130,7 @@ const walkSchema = new mongoose.Schema({
 walkSchema.index({ owner: 1, scheduledDate: -1 });
 walkSchema.index({ walker: 1, scheduledDate: -1 });
 walkSchema.index({ status: 1 });
+walkSchema.index({ 'currentLocation': '2dsphere' }); // Geospatial index for location queries
 
 // Virtual for formatted date
 walkSchema.virtual('formattedDate').get(function() {

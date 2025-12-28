@@ -86,7 +86,7 @@ export default function ActiveWalks() {
         </div>
 
         {/* No Active Walks State */}
-        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        {<div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <MapPin className="w-10 h-10 text-gray-400" />
           </div>
@@ -95,7 +95,7 @@ export default function ActiveWalks() {
           <button className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
             Book a Walk
           </button>
-        </div> */}
+        </div>}
       </div>
     </OwnerLayout>
   )

@@ -261,9 +261,365 @@ const sendWelcomeEmail = async (email, name) => {
   }
 };
 
+// Send walk created notification to admin
+const sendWalkCreatedEmail = async (walk, admin) => {
+  try {
+    const subject = `New Walk Request - ${walk.pet.name}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🐾 New Walk Request</h1>
+          </div>
+          <div class="content">
+            <p>A new walk has been booked on PetConnect.</p>
+            <div class="info-box">
+              <h3>Walk Details</h3>
+              <p><strong>Pet:</strong> ${walk.pet.name} (${walk.pet.breed})</p>
+              <p><strong>Owner:</strong> ${walk.owner.name}</p>
+              <p><strong>Walker:</strong> ${walk.walker ? walk.walker.name : 'Unassigned'}</p>
+              <p><strong>Date:</strong> ${new Date(walk.scheduledDate).toLocaleDateString()}</p>
+              <p><strong>Time:</strong> ${walk.scheduledTime}</p>
+              <p><strong>Duration:</strong> ${walk.duration} minutes</p>
+              <p><strong>Pickup:</strong> ${walk.pickupLocation}</p>
+              ${walk.dropoffLocation ? `<p><strong>Dropoff:</strong> ${walk.dropoffLocation}</p>` : ''}
+              <p><strong>Amount:</strong> KES ${walk.price}</p>
+            </div>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (!hasApiKey) {
+      console.log('\n📧 WALK CREATED EMAIL (Development Mode):');
+      console.log(`To: ${admin.email}`);
+      console.log(`Subject: ${subject}`);
+      console.log('---\n');
+      return { success: true, message: 'Email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [admin.email],
+      subject,
+      html
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send email', error: error.message };
+    }
+
+    console.log('✅ Walk created email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send walk accepted notification to owner
+const sendWalkAcceptedEmail = async (walk, owner) => {
+  try {
+    const subject = `Walk Confirmed - ${walk.pet.name}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Walk Confirmed!</h1>
+          </div>
+          <div class="content">
+            <p>Great news! Your walk request has been accepted by ${walk.walker.name}.</p>
+            <div class="info-box">
+              <h3>Walk Details</h3>
+              <p><strong>Pet:</strong> ${walk.pet.name}</p>
+              <p><strong>Walker:</strong> ${walk.walker.name}</p>
+              <p><strong>Date:</strong> ${new Date(walk.scheduledDate).toLocaleDateString()}</p>
+              <p><strong>Time:</strong> ${walk.scheduledTime}</p>
+              <p><strong>Duration:</strong> ${walk.duration} minutes</p>
+              <p><strong>Pickup:</strong> ${walk.pickupLocation}</p>
+            </div>
+            <p>Your walker will arrive at the scheduled time. You'll receive another notification when the walk starts.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (!hasApiKey) {
+      console.log('\n📧 WALK ACCEPTED EMAIL (Development Mode):');
+      console.log(`To: ${owner.email}`);
+      console.log(`Subject: ${subject}`);
+      console.log('---\n');
+      return { success: true, message: 'Email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [owner.email],
+      subject,
+      html
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send email', error: error.message };
+    }
+
+    console.log('✅ Walk accepted email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send walk started notification to owner
+const sendWalkStartedEmail = async (walk, owner) => {
+  try {
+    const subject = `Walk Started - ${walk.pet.name}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🚶 Walk in Progress</h1>
+          </div>
+          <div class="content">
+            <p>${walk.walker.name} has started walking ${walk.pet.name}!</p>
+            <div class="info-box">
+              <h3>Walk Information</h3>
+              <p><strong>Started at:</strong> ${new Date(walk.startedAt).toLocaleString()}</p>
+              <p><strong>Estimated completion:</strong> ${new Date(walk.estimatedEndTime).toLocaleString()}</p>
+              <p><strong>Duration:</strong> ${walk.duration} minutes</p>
+            </div>
+            <p>You'll receive a notification when the walk is completed.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (!hasApiKey) {
+      console.log('\n📧 WALK STARTED EMAIL (Development Mode):');
+      console.log(`To: ${owner.email}`);
+      console.log(`Subject: ${subject}`);
+      console.log('---\n');
+      return { success: true, message: 'Email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [owner.email],
+      subject,
+      html
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send email', error: error.message };
+    }
+
+    console.log('✅ Walk started email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send walk completed notification to owner
+const sendWalkCompletedEmail = async (walk, owner) => {
+  try {
+    const subject = `Walk Completed - ${walk.pet.name}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 Walk Completed!</h1>
+          </div>
+          <div class="content">
+            <p>${walk.pet.name} has been safely returned from their walk with ${walk.walker.name}.</p>
+            <div class="info-box">
+              <h3>Walk Summary</h3>
+              <p><strong>Started:</strong> ${new Date(walk.startedAt).toLocaleString()}</p>
+              <p><strong>Completed:</strong> ${new Date(walk.completedAt).toLocaleString()}</p>
+              <p><strong>Duration:</strong> ${walk.duration} minutes</p>
+              <p><strong>Amount:</strong> KES ${walk.price}</p>
+            </div>
+            <p>We hope ${walk.pet.name} enjoyed the walk! Please consider leaving a review for ${walk.walker.name}.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (!hasApiKey) {
+      console.log('\n📧 WALK COMPLETED EMAIL (Development Mode):');
+      console.log(`To: ${owner.email}`);
+      console.log(`Subject: ${subject}`);
+      console.log('---\n');
+      return { success: true, message: 'Email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [owner.email],
+      subject,
+      html
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send email', error: error.message };
+    }
+
+    console.log('✅ Walk completed email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send walk cancelled notification to walker
+const sendWalkCancelledEmail = async (walk, walker) => {
+  try {
+    const subject = `Walk Cancelled - ${walk.pet.name}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>❌ Walk Cancelled</h1>
+          </div>
+          <div class="content">
+            <p>The walk request for ${walk.pet.name} has been cancelled by the owner.</p>
+            <div class="info-box">
+              <h3>Cancelled Walk Details</h3>
+              <p><strong>Pet:</strong> ${walk.pet.name}</p>
+              <p><strong>Owner:</strong> ${walk.owner.name}</p>
+              <p><strong>Scheduled Date:</strong> ${new Date(walk.scheduledDate).toLocaleDateString()}</p>
+              <p><strong>Scheduled Time:</strong> ${walk.scheduledTime}</p>
+              ${walk.cancellationReason ? `<p><strong>Reason:</strong> ${walk.cancellationReason}</p>` : ''}
+            </div>
+            <p>We apologize for any inconvenience. You can view other available walk requests in your dashboard.</p>
+          </div>
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    if (!hasApiKey) {
+      console.log('\n📧 WALK CANCELLED EMAIL (Development Mode):');
+      console.log(`To: ${walker.email}`);
+      console.log(`Subject: ${subject}`);
+      console.log('---\n');
+      return { success: true, message: 'Email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [walker.email],
+      subject,
+      html
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send email', error: error.message };
+    }
+
+    console.log('✅ Walk cancelled email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   generateOTP,
   sendVerificationEmail,
   sendPasswordResetEmail,
-  sendWelcomeEmail
+  sendWelcomeEmail,
+  sendWalkCreatedEmail,
+  sendWalkAcceptedEmail,
+  sendWalkStartedEmail,
+  sendWalkCompletedEmail,
+  sendWalkCancelledEmail
 };

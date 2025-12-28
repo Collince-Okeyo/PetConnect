@@ -14,11 +14,11 @@ import {
   Settings,
   LogOut,
   Menu,
-  Bell,
   Search,
   Clock
 } from 'lucide-react'
 import { useState } from 'react'
+import NotificationBell from '../../../components/NotificationBell'
 
 interface WalkerLayoutProps {
   children: ReactNode
@@ -130,10 +130,7 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right">
                 <p className="text-sm font-semibold text-gray-900">{user?.name || 'Pet Walker'}</p>

@@ -105,8 +105,30 @@ const createWalkBooking = async (req, res) => {
     // Populate the walk data
     await walk.populate([
       { path: 'pet', select: 'name breed petType' },
+      { path: 'owner', select: 'name email phone' },
       { path: 'walker', select: 'name email phone profileImage rating' }
     ]);
+
+    // Send notifications to admin
+    const { createNotification } = require('./notificationController');
+    const { sendWalkCreatedEmail } = require('../utils/emailService');
+    const { sendWalkNotificationSMS } = require('../utils/smsService');
+
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await createNotification(
+        admin._id,
+        'walk_request',
+        'New Walk Request',
+        `New walk request for ${walk.pet.name} by ${req.user.name}`
+      );
+      await sendWalkCreatedEmail(walk, admin);
+      if (admin.phone) {
+        await sendWalkNotificationSMS(admin.phone, walk._id, 'created', {
+          petName: walk.pet.name
+        });
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -341,6 +363,39 @@ const acceptWalk = async (req, res) => {
       { path: 'walker', select: 'name email phone' }
     ]);
 
+    // Send notifications
+    const { createNotification } = require('./notificationController');
+    const { sendWalkAcceptedEmail } = require('../utils/emailService');
+    const { sendWalkNotificationSMS } = require('../utils/smsService');
+
+    // Notify owner
+    await createNotification(
+      walk.owner._id,
+      'walk_accepted',
+      'Walk Request Accepted',
+      `${walk.walker.name} has accepted your walk request for ${walk.pet.name}`
+    );
+    await sendWalkAcceptedEmail(walk, walk.owner);
+    if (walk.owner.phone) {
+      await sendWalkNotificationSMS(walk.owner.phone, walk._id, 'accepted', {
+        petName: walk.pet.name,
+        walkerName: walk.walker.name,
+        date: new Date(walk.scheduledDate).toLocaleDateString(),
+        time: walk.scheduledTime
+      });
+    }
+
+    // Notify admin
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await createNotification(
+        admin._id,
+        'walk_accepted',
+        'Walk Accepted',
+        `Walk #${walk._id.toString().slice(-6)} accepted by ${walk.walker.name}`
+      );
+    }
+
     res.json({
       success: true,
       data: {
@@ -409,6 +464,270 @@ const declineWalk = async (req, res) => {
   }
 };
 
+// @desc    Start walk
+// @route   PUT /api/walks/:id/start
+// @access  Private/Walker
+const startWalk = async (req, res) => {
+  try {
+    const walk = await Walk.findById(req.params.id)
+      .populate('pet', 'name breed')
+      .populate('owner', 'name email phone')
+      .populate('walker', 'name email phone');
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Verify walker is assigned and is the current user
+    if (!walk.walker || walk.walker._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to start this walk'
+      });
+    }
+
+    // Verify status is confirmed
+    if (walk.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot start walk with status: ${walk.status}`
+      });
+    }
+
+    // Set started timestamp and calculate estimated end time
+    walk.startedAt = new Date();
+    walk.estimatedEndTime = new Date(walk.startedAt.getTime() + walk.duration * 60000);
+    walk.status = 'in-progress';
+    await walk.save();
+
+    // Send notifications
+    const { createNotification } = require('./notificationController');
+    const { sendWalkStartedEmail } = require('../utils/emailService');
+    const { sendWalkNotificationSMS } = require('../utils/smsService');
+
+    // Notify owner
+    await createNotification(
+      walk.owner._id,
+      'walk_started',
+      'Walk Started',
+      `${walk.walker.name} has started walking ${walk.pet.name}!`
+    );
+    await sendWalkStartedEmail(walk, walk.owner);
+    if (walk.owner.phone) {
+      await sendWalkNotificationSMS(walk.owner.phone, walk._id, 'started', {
+        walkerName: walk.walker.name,
+        petName: walk.pet.name,
+        estimatedEnd: walk.estimatedEndTime.toLocaleTimeString()
+      });
+    }
+
+    // Notify admin
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await createNotification(
+        admin._id,
+        'walk_started',
+        'Walk Started',
+        `Walk #${walk._id.toString().slice(-6)} started by ${walk.walker.name}`
+      );
+    }
+
+    res.json({
+      success: true,
+      data: { walk },
+      message: 'Walk started successfully'
+    });
+  } catch (error) {
+    console.error('Start walk error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while starting walk'
+    });
+  }
+};
+
+// @desc    Complete walk
+// @route   PUT /api/walks/:id/complete
+// @access  Private/Walker
+const completeWalk = async (req, res) => {
+  try {
+    const walk = await Walk.findById(req.params.id)
+      .populate('pet', 'name breed')
+      .populate('owner', 'name email phone')
+      .populate('walker', 'name email phone');
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Verify walker is assigned and is the current user
+    if (!walk.walker || walk.walker._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to complete this walk'
+      });
+    }
+
+    // Verify status is in-progress
+    if (walk.status !== 'in-progress') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot complete walk with status: ${walk.status}`
+      });
+    }
+
+    // Set completed timestamp
+    walk.completedAt = new Date();
+    walk.status = 'completed';
+    
+    // Calculate actual duration
+    if (walk.startedAt) {
+      walk.actualDuration = Math.round((walk.completedAt - walk.startedAt) / 60000);
+    }
+
+    await walk.save();
+
+    // Send notifications
+    const { createNotification } = require('./notificationController');
+    const { sendWalkCompletedEmail } = require('../utils/emailService');
+    const { sendWalkNotificationSMS } = require('../utils/smsService');
+
+    // Notify owner
+    await createNotification(
+      walk.owner._id,
+      'walk_completed',
+      'Walk Completed',
+      `${walk.pet.name} has been safely returned from their walk!`
+    );
+    await sendWalkCompletedEmail(walk, walk.owner);
+    if (walk.owner.phone) {
+      await sendWalkNotificationSMS(walk.owner.phone, walk._id, 'completed', {
+        petName: walk.pet.name
+      });
+    }
+
+    // Notify admin
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await createNotification(
+        admin._id,
+        'walk_completed',
+        'Walk Completed',
+        `Walk #${walk._id.toString().slice(-6)} completed by ${walk.walker.name}`
+      );
+    }
+
+    res.json({
+      success: true,
+      data: { walk },
+      message: 'Walk completed successfully'
+    });
+  } catch (error) {
+    console.error('Complete walk error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while completing walk'
+    });
+  }
+};
+
+// @desc    Cancel walk by owner
+// @route   PUT /api/walks/:id/cancel-by-owner
+// @access  Private/Owner
+const cancelWalkByOwner = async (req, res) => {
+  try {
+    const { cancellationReason } = req.body;
+
+    const walk = await Walk.findById(req.params.id)
+      .populate('pet', 'name breed')
+      .populate('owner', 'name email phone')
+      .populate('walker', 'name email phone');
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Verify owner
+    if (walk.owner._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to cancel this walk'
+      });
+    }
+
+    // Cannot cancel if walk is in-progress or completed
+    if (walk.status === 'in-progress' || walk.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel walk with status: ${walk.status}`
+      });
+    }
+
+    // Update walk
+    walk.status = 'cancelled';
+    walk.cancelledBy = req.user._id;
+    walk.cancelledAt = new Date();
+    if (cancellationReason) {
+      walk.cancellationReason = cancellationReason;
+    }
+    await walk.save();
+
+    // Send notifications
+    const { createNotification } = require('./notificationController');
+    const { sendWalkCancelledEmail } = require('../utils/emailService');
+    const { sendWalkNotificationSMS } = require('../utils/smsService');
+
+    // Notify walker if assigned
+    if (walk.walker) {
+      await createNotification(
+        walk.walker._id,
+        'walk_cancelled',
+        'Walk Cancelled',
+        `Walk request for ${walk.pet.name} has been cancelled by the owner`
+      );
+      await sendWalkCancelledEmail(walk, walk.walker);
+      if (walk.walker.phone) {
+        await sendWalkNotificationSMS(walk.walker.phone, walk._id, 'cancelled', {
+          petName: walk.pet.name,
+          reason: cancellationReason
+        });
+      }
+    }
+
+    // Notify admin
+    const admin = await User.findOne({ role: 'admin' });
+    if (admin) {
+      await createNotification(
+        admin._id,
+        'walk_cancelled',
+        'Walk Cancelled',
+        `Walk #${walk._id.toString().slice(-6)} cancelled by owner`
+      );
+    }
+
+    res.json({
+      success: true,
+      data: { walk },
+      message: 'Walk cancelled successfully'
+    });
+  } catch (error) {
+    console.error('Cancel walk error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while cancelling walk'
+    });
+  }
+};
+
 module.exports = {
   getAvailableWalkers,
   createWalkBooking,
@@ -416,5 +735,8 @@ module.exports = {
   getWalkById,
   cancelWalk,
   acceptWalk,
-  declineWalk
+  declineWalk,
+  startWalk,
+  completeWalk,
+  cancelWalkByOwner
 };
