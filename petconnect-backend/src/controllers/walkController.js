@@ -135,7 +135,13 @@ const getUserWalks = async (req, res) => {
     // Build query based on user role
     let query = {};
     
-    if (req.user.role === 'walker') {
+    if (req.user.role === 'admin') {
+      // Admins can see all walks
+      if (status) {
+        query.status = status;
+      }
+      // No user filter for admins
+    } else if (req.user.role === 'walker') {
       // For walkers requesting pending status, show both assigned pending and unassigned walks
       if (status === 'pending') {
         query.$or = [
@@ -176,7 +182,7 @@ const getUserWalks = async (req, res) => {
       .populate('pet', 'name breed petType photos')
       .populate('owner', 'name email phone profilePicture')
       .populate('walker', 'name email phone profilePicture rating')
-      .sort({ scheduledDate: -1 });
+      .sort({ createdAt: -1 }); // Sort by creation date, newest first
 
     res.json({
       success: true,
