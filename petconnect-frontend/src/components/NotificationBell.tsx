@@ -1,5 +1,6 @@
 import { Bell, X, Check } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { api } from '../lib/api'
 
 interface Notification {
@@ -132,8 +133,14 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {showDropdown && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[600px] flex flex-col">
+      {showDropdown && createPortal(
+        <div 
+          className="fixed w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-[600px] flex flex-col"
+          style={{
+            top: dropdownRef.current ? dropdownRef.current.getBoundingClientRect().bottom + 8 : 0,
+            right: window.innerWidth - (dropdownRef.current ? dropdownRef.current.getBoundingClientRect().right : 0)
+          }}
+        >
           {/* Header */}
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="font-bold text-gray-900">Notifications</h3>
@@ -214,7 +221,8 @@ export default function NotificationBell() {
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
