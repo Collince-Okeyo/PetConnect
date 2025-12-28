@@ -311,7 +311,7 @@ function EditProfileModal({ user, onClose, onSave }: EditProfileModalProps) {
           coordinates: user.location?.coordinates || [0, 0]
         },
         bio: formData.bio,
-        specialties: formData.specialties.split(',').map(s => s.trim()).filter(Boolean)
+        specialties: formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean)
       })
 
       if (response.data.success) {

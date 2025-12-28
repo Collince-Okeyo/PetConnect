@@ -20,8 +20,11 @@ interface Walker {
   name: string
   email: string
   phone?: string
-  profileImage?: string
-  rating?: number
+  profilePicture?: string
+  rating?: {
+    average: number
+    count: number
+  }
   totalWalks?: number
   location?: string
 }
@@ -42,6 +45,8 @@ export default function BookWalk() {
   const [selectedTime, setSelectedTime] = useState('')
   const [duration, setDuration] = useState(30)
   const [specialInstructions, setSpecialInstructions] = useState('')
+  const [pickupLocation, setPickupLocation] = useState('')
+  const [dropoffLocation, setDropoffLocation] = useState('')
   
   const [toast, setToast] = useState<{show: boolean, type: 'success' | 'error', message: string}>({
     show: false,
@@ -81,7 +86,7 @@ export default function BookWalk() {
   }
 
   const calculatePrice = () => {
-    const baseRate = 500 // KES per 30 minutes
+    const baseRate = 300 // KES per 30 minutes
     return (baseRate / 30) * duration
   }
 
@@ -91,16 +96,16 @@ export default function BookWalk() {
       showToast('error', 'Please select a pet')
       return
     }
-    if (!selectedWalker) {
-      showToast('error', 'Please select a walker')
-      return
-    }
     if (!selectedDate) {
       showToast('error', 'Please select a date')
       return
     }
     if (!selectedTime) {
       showToast('error', 'Please select a time')
+      return
+    }
+    if (!pickupLocation) {
+      showToast('error', 'Please enter pickup location')
       return
     }
 
@@ -115,11 +120,13 @@ export default function BookWalk() {
       setSubmitting(true)
       const response = await api.post('/walks/book', {
         petId: selectedPet,
-        walkerId: selectedWalker,
+        walkerId: selectedWalker || undefined, // Optional
         scheduledDate: selectedDate,
         scheduledTime: selectedTime,
         duration,
-        specialInstructions
+        specialInstructions,
+        pickupLocation,
+        dropoffLocation
       })
 
       if (response.data.success) {
@@ -225,6 +232,28 @@ export default function BookWalk() {
                 </div>
 
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Location *</label>
+                  <input
+                    type="text"
+                    value={pickupLocation}
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    placeholder="e.g., Westlands, Nairobi"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Dropoff Location (Optional)</label>
+                  <input
+                    type="text"
+                    value={dropoffLocation}
+                    onChange={(e) => setDropoffLocation(e.target.value)}
+                    placeholder="Same as pickup if not specified"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
                   <textarea
                     rows={3}
@@ -241,7 +270,10 @@ export default function BookWalk() {
 
             {/* Available Walkers */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Walkers Nearby</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Available Walkers</h2>
+                <span className="text-xs text-gray-500">Optional - You can book without selecting a walker</span>
+              </div>
               {walkers.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">No walkers available at the moment</p>
               ) : (
@@ -285,6 +317,16 @@ export default function BookWalk() {
                   <span className="text-purple-100">Duration</span>
                   <span className="font-semibold">{duration} minutes</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-purple-100">Pickup</span>
+                  <span className="font-semibold text-right">{pickupLocation || 'Not set'}</span>
+                </div>
+                {dropoffLocation && (
+                  <div className="flex justify-between">
+                    <span className="text-purple-100">Dropoff</span>
+                    <span className="font-semibold text-right">{dropoffLocation}</span>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-purple-400 pt-4 mb-6">
@@ -331,15 +373,18 @@ interface WalkerCardProps {
 }
 
 function WalkerCard({ walker, isSelected, onSelect }: WalkerCardProps) {
+  const profileImage = walker.profilePicture 
+    ? `http://localhost:5000/${walker.profilePicture}` 
+    : null
   return (
     <div className={`flex items-center gap-4 p-4 border-2 rounded-lg transition-all cursor-pointer ${
       isSelected ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'
     }`}
     onClick={onSelect}
     >
-      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-        {walker.profileImage ? (
-          <img src={walker.profileImage} alt={walker.name} className="w-full h-full object-cover rounded-full" />
+      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0 overflow-hidden">
+        {profileImage ? (
+          <img src={profileImage} alt={walker.name} className="w-full h-full object-cover" />
         ) : (
           walker.name.charAt(0).toUpperCase()
         )}
@@ -349,7 +394,7 @@ function WalkerCard({ walker, isSelected, onSelect }: WalkerCardProps) {
         <div className="flex items-center gap-3 mt-1">
           <div className="flex items-center gap-1">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium">{Number(walker.rating || 5).toFixed(1)}</span>
+            <span className="text-sm font-medium">{walker.rating ? walker.rating.average.toFixed(1) : '5.0'}</span>
             <span className="text-sm text-gray-500">({walker.totalWalks || 0} walks)</span>
           </div>
         </div>

@@ -13,8 +13,8 @@ const walkSchema = new mongoose.Schema({
   },
   walker: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Walker is required']
+    ref: 'User'
+    // Walker is optional - can be assigned later
   },
   scheduledDate: {
     type: Date,
@@ -32,8 +32,8 @@ const walkSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'],
-    default: 'pending'
+    enum: ['unassigned', 'pending', 'confirmed', 'in-progress', 'completed', 'cancelled'],
+    default: 'unassigned'
   },
   pickupLocation: {
     type: String

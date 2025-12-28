@@ -12,7 +12,7 @@ const getAvailableWalkers = async (req, res) => {
       isOnline: true,
       isDeleted: false,
       status: 'active'
-    }).select('name email phone profileImage location rating totalWalks');
+    }).select('name email phone profilePicture location rating totalWalks');
 
     res.json({
       success: true,
@@ -59,19 +59,22 @@ const createWalkBooking = async (req, res) => {
       });
     }
 
-    // Validate walker exists and is available
-    const walker = await User.findOne({
-      _id: walkerId,
-      role: 'walker',
-      isOnline: true,
-      status: 'active'
-    });
-
-    if (!walker) {
-      return res.status(404).json({
-        success: false,
-        message: 'Walker not found or not available'
+    // Validate walker if provided (walker is optional)
+    let walker = null;
+    if (walkerId) {
+      walker = await User.findOne({
+        _id: walkerId,
+        role: 'walker',
+        isOnline: true,
+        status: 'active'
       });
+
+      if (!walker) {
+        return res.status(404).json({
+          success: false,
+          message: 'Walker not found or not available'
+        });
+      }
     }
 
     // Calculate price (base rate * duration multiplier)
@@ -79,10 +82,9 @@ const createWalkBooking = async (req, res) => {
     const price = (baseRate / 30) * duration;
 
     // Create walk booking
-    const walk = await Walk.create({
+    const walkData = {
       pet: petId,
       owner: req.user.id,
-      walker: walkerId,
       scheduledDate: new Date(scheduledDate),
       scheduledTime,
       duration,
@@ -90,8 +92,15 @@ const createWalkBooking = async (req, res) => {
       pickupLocation,
       dropoffLocation,
       price,
-      status: 'pending'
-    });
+      status: walkerId ? 'pending' : 'unassigned' // unassigned if no walker selected
+    };
+
+    // Only add walker if provided
+    if (walkerId) {
+      walkData.walker = walkerId;
+    }
+
+    const walk = await Walk.create(walkData);
 
     // Populate the walk data
     await walk.populate([
@@ -121,22 +130,52 @@ const createWalkBooking = async (req, res) => {
 const getUserWalks = async (req, res) => {
   try {
     const { status } = req.query;
+    console.log('getUserWalks called - User:', req.user.id, 'Role:', req.user.role, 'Status filter:', status);
     
-    const query = {
-      $or: [
+    // Build query based on user role
+    let query = {};
+    
+    if (req.user.role === 'walker') {
+      // For walkers requesting pending status, show both assigned pending and unassigned walks
+      if (status === 'pending') {
+        query.$or = [
+          { walker: req.user.id, status: 'pending' },
+          { walker: null, status: 'unassigned' }
+        ];
+      } else if (status) {
+        // For other statuses, only show walks assigned to this walker
+        query.walker = req.user.id;
+        query.status = status;
+      } else {
+        // No status filter - show assigned walks and unassigned walks
+        query.$or = [
+          { walker: req.user.id },
+          { walker: null, status: 'unassigned' }
+        ];
+      }
+    } else if (req.user.role === 'owner') {
+      // Owners see their own walks
+      query.owner = req.user.id;
+      if (status) {
+        query.status = status;
+      }
+    } else {
+      // For other roles, show both owner and walker walks
+      query.$or = [
         { owner: req.user.id },
         { walker: req.user.id }
-      ]
-    };
-
-    if (status) {
-      query.status = status;
+      ];
+      if (status) {
+        query.status = status;
+      }
     }
+
+    console.log('Final query:', JSON.stringify(query, null, 2));
 
     const walks = await Walk.find(query)
       .populate('pet', 'name breed petType photos')
-      .populate('owner', 'name email phone profileImage')
-      .populate('walker', 'name email phone profileImage rating')
+      .populate('owner', 'name email phone profilePicture')
+      .populate('walker', 'name email phone profilePicture rating')
       .sort({ scheduledDate: -1 });
 
     res.json({
@@ -249,10 +288,127 @@ const cancelWalk = async (req, res) => {
   }
 };
 
+// @desc    Accept walk request
+// @route   PUT /api/walks/:id/accept
+// @access  Private/Walker
+const acceptWalk = async (req, res) => {
+  try {
+    const walk = await Walk.findById(req.params.id);
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Check if walk is unassigned or assigned to this walker
+    const isUnassigned = !walk.walker && walk.status === 'unassigned';
+    const isAssignedToWalker = walk.walker && walk.walker.toString() === req.user.id;
+
+    if (!isUnassigned && !isAssignedToWalker) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to accept this walk'
+      });
+    }
+
+    // Check if walk can be accepted
+    if (!['pending', 'unassigned'].includes(walk.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot accept a ${walk.status} walk`
+      });
+    }
+
+    // If unassigned, assign to this walker
+    if (isUnassigned) {
+      walk.walker = req.user.id;
+    }
+
+    walk.status = 'confirmed';
+    await walk.save();
+
+    await walk.populate([
+      { path: 'pet', select: 'name breed petType photos' },
+      { path: 'owner', select: 'name email phone' },
+      { path: 'walker', select: 'name email phone' }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        walk
+      },
+      message: 'Walk request accepted successfully'
+    });
+  } catch (error) {
+    console.error('Accept walk error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while accepting walk'
+    });
+  }
+};
+
+// @desc    Decline walk request
+// @route   PUT /api/walks/:id/decline
+// @access  Private/Walker
+const declineWalk = async (req, res) => {
+  try {
+    const walk = await Walk.findById(req.params.id);
+
+    if (!walk) {
+      return res.status(404).json({
+        success: false,
+        message: 'Walk not found'
+      });
+    }
+
+    // Check if user is the assigned walker
+    if (walk.walker.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to decline this walk'
+      });
+    }
+
+    // Check if walk is pending
+    if (walk.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot decline a ${walk.status} walk`
+      });
+    }
+
+    walk.status = 'cancelled';
+    walk.cancellationReason = 'Declined by walker';
+    walk.cancelledBy = req.user.id;
+    walk.cancelledAt = new Date();
+    await walk.save();
+
+    res.json({
+      success: true,
+      data: {
+        walk
+      },
+      message: 'Walk request declined'
+    });
+  } catch (error) {
+    console.error('Decline walk error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while declining walk'
+    });
+  }
+};
+
 module.exports = {
   getAvailableWalkers,
   createWalkBooking,
   getUserWalks,
   getWalkById,
-  cancelWalk
+  cancelWalk,
+  acceptWalk,
+  declineWalk
 };

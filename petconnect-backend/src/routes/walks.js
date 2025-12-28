@@ -6,7 +6,9 @@ const {
   createWalkBooking,
   getUserWalks,
   getWalkById,
-  cancelWalk
+  cancelWalk,
+  acceptWalk,
+  declineWalk
 } = require('../controllers/walkController');
 
 // @route   GET /api/walks/walkers/available
@@ -33,5 +35,15 @@ router.get('/:id', protect, getWalkById);
 // @desc    Cancel walk
 // @access  Private
 router.put('/:id/cancel', protect, cancelWalk);
+
+// @route   PUT /api/walks/:id/accept
+// @desc    Accept walk request (walker only)
+// @access  Private/Walker
+router.put('/:id/accept', protect, authorize('walker'), acceptWalk);
+
+// @route   PUT /api/walks/:id/decline
+// @desc    Decline walk request (walker only)
+// @access  Private/Walker
+router.put('/:id/decline', protect, authorize('walker'), declineWalk);
 
 module.exports = router;
