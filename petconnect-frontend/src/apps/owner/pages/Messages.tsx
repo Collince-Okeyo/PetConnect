@@ -1,5 +1,5 @@
 import OwnerLayout from '../layouts/OwnerLayout'
-import { Search, Send, Paperclip, MoreVertical, Loader, Check, CheckCheck, Smile } from 'lucide-react'
+import { Search, Send, Paperclip, MoreVertical, Loader, Check, CheckCheck, Smile, FileText, X } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../../lib/api'
@@ -13,11 +13,20 @@ interface User {
   profilePicture?: string
 }
 
+interface Attachment {
+  type: 'image' | 'document'
+  url: string
+  filename: string
+  size: number
+  mimeType: string
+}
+
 interface Message {
   _id: string
   sender: User
   receiver: User
   content: string
+  attachments?: Attachment[]
   isRead: boolean
   readAt?: string
   createdAt: string
@@ -51,6 +60,7 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -142,9 +152,13 @@ export default function Messages() {
   const fetchConversations = async () => {
     try {
       setLoading(true)
+      console.log('📋 Fetching conversations...')
       const response = await api.get('/messages/conversations')
       
+      console.log('📦 Conversations response:', response.data)
+      
       if (response.data.success) {
+        console.log('✅ Setting conversations:', response.data.data.conversations)
         setConversations(response.data.data.conversations)
         
         if (!selectedChat && !chatParam && response.data.data.conversations.length > 0) {
@@ -152,7 +166,7 @@ export default function Messages() {
         }
       }
     } catch (err: any) {
-      console.error('Error fetching conversations:', err)
+      console.error('❌ Error fetching conversations:', err)
     } finally {
       setLoading(false)
     }
@@ -198,18 +212,30 @@ export default function Messages() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!messageInput.trim() || !selectedChat || sending) return
+    if ((!messageInput.trim() && selectedFiles.length === 0) || !selectedChat || sending) return
 
     try {
       setSending(true)
-      const response = await api.post('/messages/send', {
-        receiverId: selectedChat,
-        content: messageInput.trim()
+      
+      const formData = new FormData()
+      formData.append('receiverId', selectedChat)
+      if (messageInput.trim()) {
+        formData.append('content', messageInput.trim())
+      }
+      
+      // Append all selected files
+      selectedFiles.forEach(file => {
+        formData.append('files', file)
+      })
+
+      const response = await api.post('/messages/send', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       if (response.data.success) {
         const newMessage = response.data.data.message
         setMessageInput('')
+        setSelectedFiles([])
         setMessages([...messages, newMessage])
         
         // Emit via Socket.io
@@ -226,6 +252,29 @@ export default function Messages() {
     } finally {
       setSending(false)
     }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    // Validate file sizes (10MB each)
+    const oversized = files.filter(f => f.size > 10 * 1024 * 1024)
+    if (oversized.length > 0) {
+      alert(`Some files exceed 10MB limit: ${oversized.map(f => f.name).join(', ')}`)
+      return
+    }
+
+    // Limit to 5 files total
+    const newFiles = [...selectedFiles, ...files].slice(0, 5)
+    setSelectedFiles(newFiles)
+    
+    // Reset input
+    e.target.value = ''
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,10 +319,10 @@ export default function Messages() {
     const date = new Date(dateString)
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
-
   const filteredConversations = conversations.filter(conv =>
     conv.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+  console.log('Conversations filtered:', filteredConversations)
 
   const selectedConversation = conversations.find(c => c.otherUser._id === selectedChat)
   const chatUser = selectedConversation?.otherUser || newChatUser
@@ -397,6 +446,7 @@ export default function Messages() {
                             time={formatMessageTime(message.createdAt)}
                             sent={message.sender._id === currentUserId}
                             isRead={message.isRead}
+                            attachments={message.attachments}
                             showAvatar={
                               index === 0 ||
                               messages[index - 1].sender._id !== message.sender._id
@@ -421,15 +471,53 @@ export default function Messages() {
                   )}
                 </div>
 
+                {/* File Preview Area */}
+                {selectedFiles.length > 0 && (
+                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex gap-2 overflow-x-auto">
+                    {selectedFiles.map((file, idx) => (
+                      <div key={idx} className="relative flex-shrink-0">
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-white border-2 border-gray-200">
+                          {file.type.startsWith('image/') ? (
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                              <FileText className="w-8 h-8 text-gray-600" />
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(idx)}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <p className="text-xs text-gray-600 mt-1 w-20 truncate text-center">{file.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Message Input */}
                 <form onSubmit={handleSendMessage} className="px-6 py-4 bg-white border-t border-gray-200">
                   <div className="flex items-center gap-3">
                     <button type="button" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors">
                       <Smile className="w-5 h-5 text-gray-600" />
                     </button>
-                    <button type="button" className="p-2.5 hover:bg-gray-100 rounded-full transition-colors">
+                    <label className="cursor-pointer p-2.5 hover:bg-gray-100 rounded-full transition-colors">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
                       <Paperclip className="w-5 h-5 text-gray-600" />
-                    </button>
+                    </label>
                     <input
                       ref={inputRef}
                       type="text"
@@ -441,7 +529,7 @@ export default function Messages() {
                     />
                     <button
                       type="submit"
-                      disabled={!messageInput.trim() || sending}
+                      disabled={(!messageInput.trim() && selectedFiles.length === 0) || sending}
                       className="p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {sending ? (
@@ -530,22 +618,63 @@ interface MessageBubbleProps {
   isRead?: boolean
   showAvatar?: boolean
   senderName?: string
+  attachments?: Attachment[]
 }
 
-function MessageBubble({ message, time, sent, isRead }: MessageBubbleProps) {
-  console.log('💬 MessageBubble rendering:', { message, time, sent, isRead })
+function MessageBubble({ message, time, sent, isRead, attachments }: MessageBubbleProps) {
+  console.log('💬 MessageBubble rendering:', { message, time, sent, isRead, attachments })
   return (
     <div className={`flex ${sent ? 'justify-end' : 'justify-start'} mb-4`}>
       <div className={`max-w-[70%]`}>
-        <div
-          className={`px-4 py-3 rounded-2xl border-2 ${
-            sent
-              ? 'bg-purple-600 text-white border-purple-700 rounded-br-none'
-              : 'bg-gray-100 text-gray-900 border-gray-200 rounded-bl-none'
-          }`}
-        >
-          <p className="text-sm leading-relaxed break-words">{message}</p>
-        </div>
+        {/* Attachments */}
+        {attachments && attachments.length > 0 && (
+          <div className="mb-2 space-y-2">
+            {attachments.map((att, idx) => (
+              <div key={idx}>
+                {att.type === 'image' ? (
+                  <img
+                    src={`http://localhost:5000/${att.url}`}
+                    alt={att.filename}
+                    className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-md"
+                    onClick={() => window.open(`http://localhost:5000/${att.url}`, '_blank')}
+                  />
+                ) : (
+                  <a
+                    href={`http://localhost:5000/${att.url}`}
+                    download={att.filename}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                      sent
+                        ? 'bg-purple-500 border-purple-600 text-white hover:bg-purple-600'
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{att.filename}</p>
+                      <p className={`text-xs ${sent ? 'text-purple-100' : 'text-gray-500'}`}>
+                        {(att.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Message text */}
+        {message && (
+          <div
+            className={`px-4 py-3 rounded-2xl border-2 ${
+              sent
+                ? 'bg-purple-600 text-white border-purple-700 rounded-br-none'
+                : 'bg-gray-100 text-gray-900 border-gray-200 rounded-bl-none'
+            }`}
+          >
+            <p className="text-sm leading-relaxed break-words">{message}</p>
+          </div>
+        )}
+        
         <div className={`flex items-center gap-1 mt-1 px-1 ${sent ? 'justify-end' : 'justify-start'}`}>
           <p className="text-xs text-gray-500">{time}</p>
           {sent && (

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cleanup Orphaned Messages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #4f46e5;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f3f4f6;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 Cleanup Orphaned Messages</h1>
+    <p>This will remove messages where the sender or receiver users no longer exist in the database.</p>
+    
+    <button id="cleanupBtn" onclick="runCleanup()">Run Cleanup</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function runCleanup() {
+            const btn = document.getElementById('cleanupBtn');
+            const resultDiv = document.getElementById('result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Running cleanup...';
+            resultDiv.textContent = 'Please wait...';
+            resultDiv.className = '';
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('No auth token found. Please log in first.');
+                }
+                
+                const response = await fetch('http://localhost:5000/api/messages/cleanup/orphaned', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Cleanup Successful!</h3>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                        <p><strong>Total Messages:</strong> ${data.data.totalMessages}</p>
+                        <p><strong>Orphaned Messages:</strong> ${data.data.orphanedMessages}</p>
+                        ${data.data.deletedMessages ? `<p><strong>Deleted:</strong> ${data.data.deletedMessages}</p>` : ''}
+                        ${data.data.remainingMessages ? `<p><strong>Remaining:</strong> ${data.data.remainingMessages}</p>` : ''}
+                    `;
+                } else {
+                    throw new Error(data.message || 'Cleanup failed');
+                }
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Cleanup Again';
+            }
+        }
+    </script>
+</body>
+</html>
