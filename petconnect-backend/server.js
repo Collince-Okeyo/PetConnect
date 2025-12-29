@@ -84,6 +84,7 @@ app.use('/api/temperaments', require('./src/routes/temperaments'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/walks', require('./src/routes/walks'));
 app.use('/api/notifications', require('./src/routes/notifications'));
+app.use('/api/messages', require('./src/routes/messages'));
 // app.use('/api/payments', require('./src/routes/payments'));
 
 // Error handling middleware
@@ -105,7 +106,37 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// Create HTTP server
+const http = require('http');
+const server = http.createServer(app);
+
+// Setup Socket.io
+const { Server } = require('socket.io');
+const { socketAuth, setupMessageSocket } = require('./src/sockets/messageSocket');
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3005',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:4173'
+    ],
+    credentials: true
+  }
+});
+
+// Socket.io authentication
+io.use(socketAuth);
+
+// Setup message socket handlers
+setupMessageSocket(io);
+
+// Make io accessible to routes
+app.set('io', io);
+
+server.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔌 Socket.io is ready for real-time messaging`);
 });

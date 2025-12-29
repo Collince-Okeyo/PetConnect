@@ -1,6 +1,7 @@
 import WalkerLayout from '../layouts/WalkerLayout'
 import { MapPin, Clock, Phone, MessageSquare, CheckCircle, Loader, AlertCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../../../lib/api'
 import { useLocationTracking } from '../../../hooks/useLocationTracking'
 import WalkerActiveWalkMap from '../../../components/maps/WalkerActiveWalkMap'
@@ -32,10 +33,12 @@ interface LocationData {
 }
 
 export default function ActiveWalks() {
+  const navigate = useNavigate()
   const [activeWalk, setActiveWalk] = useState<Walk | null>(null)
   const [locationData, setLocationData] = useState<LocationData | null>(null)
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
+  const [showPhoneMenu, setShowPhoneMenu] = useState(false)
   const [toast, setToast] = useState<{show: boolean, type: 'success' | 'error', message: string}>({
     show: false,
     type: 'success',
@@ -317,14 +320,39 @@ export default function ActiveWalks() {
             </div>
             <div className="flex gap-2">
               {activeWalk.owner.phone && (
-                <a
-                  href={`tel:${activeWalk.owner.phone}`}
-                  className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
-                >
-                  <Phone className="w-5 h-5 text-gray-600" />
-                </a>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowPhoneMenu(!showPhoneMenu)}
+                    className="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
+                  >
+                    <Phone className="w-5 h-5 text-gray-600" />
+                  </button>
+                  {showPhoneMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-10">
+                      <a
+                        href={`tel:${activeWalk.owner.phone}`}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => setShowPhoneMenu(false)}
+                      >
+                        📞 Call
+                      </a>
+                      <a
+                        href={`https://wa.me/${activeWalk.owner.phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => setShowPhoneMenu(false)}
+                      >
+                        💬 WhatsApp
+                      </a>
+                    </div>
+                  )}
+                </div>
               )}
-              <button className="p-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all">
+              <button 
+                onClick={() => navigate(`/walker/messages?chat=${activeWalk.owner._id}`)}
+                className="p-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-all"
+              >
                 <MessageSquare className="w-5 h-5" />
               </button>
             </div>
