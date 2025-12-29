@@ -18,6 +18,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -56,22 +57,37 @@ export default function NotificationBell() {
     }
   }
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (notificationId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
     try {
+      // Optimistically update UI
+      setNotifications(prev => prev.map(n => 
+        n._id === notificationId ? { ...n, isRead: true } : n
+      ))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+      
       await api.put(`/notifications/${notificationId}/read`)
-      fetchNotifications() // Refresh
     } catch (err) {
       console.error('Error marking notification as read:', err)
+      // Revert on error
+      fetchNotifications()
     }
   }
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = async (e?: React.MouseEvent) => {
+    e?.stopPropagation()
     try {
       setLoading(true)
+      
+      // Optimistically update UI
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+      
       await api.put('/notifications/read-all')
-      fetchNotifications() // Refresh
     } catch (err) {
       console.error('Error marking all as read:', err)
+      // Revert on error
+      fetchNotifications()
     } finally {
       setLoading(false)
     }
@@ -135,20 +151,21 @@ export default function NotificationBell() {
 
       {showDropdown && createPortal(
         <div 
-          className="fixed w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-[600px] flex flex-col"
+          className="fixed w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-[600px] flex flex-col pointer-events-auto"
           style={{
             top: dropdownRef.current ? dropdownRef.current.getBoundingClientRect().bottom + 8 : 0,
             right: window.innerWidth - (dropdownRef.current ? dropdownRef.current.getBoundingClientRect().right : 0)
           }}
         >
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between relative z-10">
             <h3 className="font-bold text-gray-900">Notifications</h3>
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
+                onClick={(e) => markAllAsRead(e)}
+                onMouseDown={(e) => e.stopPropagation()}
                 disabled={loading}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                className="relative z-10 pointer-events-auto text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 cursor-pointer"
               >
                 Mark all as read
               </button>
@@ -188,14 +205,15 @@ export default function NotificationBell() {
                         <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                           {notification.message}
                         </p>
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center justify-between mt-2 relative z-10">
                           <span className="text-xs text-gray-500">
                             {formatTime(notification.createdAt)}
                           </span>
                           {!notification.isRead && (
                             <button
-                              onClick={() => markAsRead(notification._id)}
-                              className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                              onClick={(e) => markAsRead(notification._id, e)}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              className="relative z-10 pointer-events-auto text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 cursor-pointer"
                             >
                               <Check className="w-3 h-3" />
                               Mark as read
