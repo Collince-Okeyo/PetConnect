@@ -151,10 +151,11 @@ export default function NotificationBell() {
 
       {showDropdown && createPortal(
         <div 
-          className="fixed w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-[600px] flex flex-col pointer-events-auto"
+          className="fixed w-[calc(100vw-2rem)] sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] max-h-[600px] flex flex-col pointer-events-auto"
           style={{
             top: dropdownRef.current ? dropdownRef.current.getBoundingClientRect().bottom + 8 : 0,
-            right: window.innerWidth - (dropdownRef.current ? dropdownRef.current.getBoundingClientRect().right : 0)
+            left: window.innerWidth < 640 ? '1rem' : 'auto',
+            right: window.innerWidth < 640 ? '1rem' : window.innerWidth - (dropdownRef.current ? dropdownRef.current.getBoundingClientRect().right : 0)
           }}
         >
           {/* Header */}

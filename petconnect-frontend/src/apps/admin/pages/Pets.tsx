@@ -175,7 +175,7 @@ export default function Pets() {
           </div>
           <button
             onClick={() => setShowManagement(true)}
-            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap"
           >
             <Settings className="w-5 h-5" />
             Manage Pet Data

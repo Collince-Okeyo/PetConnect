@@ -6,13 +6,13 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div>
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-          <p className="text-gray-600 mt-1">Welcome back! Here's what's happening today.</p>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-1">Welcome back! Here's what's happening today.</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <StatCard
             title="Total Users"
             value="1,234"
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Secondary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
           <MiniStatCard
             title="Pet Owners"
             value="856"
@@ -69,12 +69,12 @@ export default function AdminDashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Recent Activity */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-              <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="text-base md:text-lg font-semibold text-gray-900">Recent Activity</h2>
+              <button className="text-xs md:text-sm text-indigo-600 hover:text-indigo-700 font-medium">
                 View All
               </button>
             </div>
@@ -119,11 +119,11 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Stats */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Today's Summary */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Summary</h3>
-              <div className="space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Today's Summary</h3>
+              <div className="space-y-3 md:space-y-4">
                 <SummaryItem label="Walks Completed" value="127" />
                 <SummaryItem label="New Registrations" value="23" />
                 <SummaryItem label="Total Earnings" value="KES 234,500" />
@@ -132,8 +132,8 @@ export default function AdminDashboard() {
             </div>
 
             {/* Top Walkers */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Walkers</h3>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Top Walkers</h3>
               <div className="space-y-3">
                 <TopWalkerItem name="Sarah Johnson" walks="45" rating="4.9" />
                 <TopWalkerItem name="Mike Davis" walks="38" rating="4.8" />
@@ -144,11 +144,11 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
           {/* Revenue Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
-            <div className="h-64 flex items-end justify-between gap-2">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Revenue Overview</h3>
+            <div className="h-48 md:h-64 flex items-end justify-between gap-1 md:gap-2">
               {[65, 45, 78, 52, 88, 72, 95].map((height, index) => (
                 <div key={index} className="flex-1 flex flex-col items-center gap-2">
                   <div
@@ -164,9 +164,9 @@ export default function AdminDashboard() {
           </div>
 
           {/* User Growth */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">User Growth</h3>
-            <div className="h-64 flex items-end justify-between gap-2">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">User Growth</h3>
+            <div className="h-48 md:h-64 flex items-end justify-between gap-1 md:gap-2">
               {[40, 55, 48, 68, 75, 82, 90].map((height, index) => (
                 <div key={index} className="flex-1 flex flex-col items-center gap-2">
                   <div className="w-full flex flex-col gap-1">
@@ -179,20 +179,20 @@ export default function AdminDashboard() {
                       style={{ height: `${height * 0.4}px` }}
                     ></div>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-[10px] md:text-xs text-gray-500">
                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}
                   </span>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-center gap-6 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Owners</span>
+            <div className="flex items-center justify-center gap-4 md:gap-6 mt-3 md:mt-4">
+              <div className="flex items-center gap-1 md:gap-2">
+                <div className="w-2 h-2 md:w-3 md:h-3 bg-purple-500 rounded-full"></div>
+                <span className="text-xs md:text-sm text-gray-600">Owners</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
-                <span className="text-sm text-gray-600">Walkers</span>
+              <div className="flex items-center gap-1 md:gap-2">
+                <div className="w-2 h-2 md:w-3 md:h-3 bg-teal-500 rounded-full"></div>
+                <span className="text-xs md:text-sm text-gray-600">Walkers</span>
               </div>
             </div>
           </div>
@@ -220,18 +220,18 @@ function StatCard({ title, value, change, isPositive, icon, color }: StatCardPro
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`${colorClasses[color]} p-3 rounded-lg text-white`}>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <div className={`${colorClasses[color]} p-2 md:p-3 rounded-lg text-white`}>
           {icon}
         </div>
-        <div className="flex items-center gap-1 text-sm font-medium text-green-600">
-          {isPositive ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-          <span>{change}</span>
+        <div className="flex items-center gap-1 text-xs md:text-sm font-medium text-green-600">
+          {isPositive ? <ArrowUp className="w-3 h-3 md:w-4 md:h-4" /> : <ArrowDown className="w-3 h-3 md:w-4 md:h-4" />}
+          <span className="truncate max-w-[80px] sm:max-w-none">{change}</span>
         </div>
       </div>
-      <h3 className="text-gray-600 text-sm font-medium mb-1">{title}</h3>
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <h3 className="text-gray-600 text-xs md:text-sm font-medium mb-1">{title}</h3>
+      <p className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 truncate">{value}</p>
     </div>
   )
 }
@@ -245,13 +245,13 @@ interface MiniStatCardProps {
 
 function MiniStatCard({ title, value, icon, color }: MiniStatCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-4">
-      <div className={`bg-${color}-100 p-3 rounded-lg text-${color}-600`}>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-4 flex items-center gap-3 md:gap-4">
+      <div className={`bg-${color}-100 p-2 md:p-3 rounded-lg text-${color}-600 flex-shrink-0`}>
         {icon}
       </div>
-      <div>
-        <p className="text-gray-600 text-sm">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-gray-600 text-xs md:text-sm truncate">{title}</p>
+        <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 truncate">{value}</p>
       </div>
     </div>
   )
@@ -275,18 +275,18 @@ function ActivityItem({ type, description, time, icon }: ActivityItemProps) {
   }
 
   return (
-    <div className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconColors[icon as keyof typeof iconColors]}`}>
-        {icon === 'user' && <Users className="w-5 h-5" />}
-        {icon === 'walk' && <TrendingUp className="w-5 h-5" />}
-        {icon === 'payment' && <CreditCard className="w-5 h-5" />}
-        {icon === 'pet' && <Dog className="w-5 h-5" />}
-        {icon === 'verify' && <AlertCircle className="w-5 h-5" />}
-        {icon === 'complaint' && <AlertCircle className="w-5 h-5" />}
+    <div className="flex items-start gap-3 md:gap-4 pb-3 md:pb-4 border-b border-gray-100 last:border-0">
+      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconColors[icon as keyof typeof iconColors]}`}>
+        {icon === 'user' && <Users className="w-4 h-4 md:w-5 md:h-5" />}
+        {icon === 'walk' && <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />}
+        {icon === 'payment' && <CreditCard className="w-4 h-4 md:w-5 md:h-5" />}
+        {icon === 'pet' && <Dog className="w-4 h-4 md:w-5 md:h-5" />}
+        {icon === 'verify' && <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />}
+        {icon === 'complaint' && <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 text-sm">{type}</p>
-        <p className="text-sm text-gray-600 truncate">{description}</p>
+        <p className="font-medium text-gray-900 text-xs md:text-sm truncate">{type}</p>
+        <p className="text-xs md:text-sm text-gray-600 truncate">{description}</p>
         <p className="text-xs text-gray-400 mt-1">{time}</p>
       </div>
     </div>
