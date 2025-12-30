@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import {
@@ -136,9 +136,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <p className="text-sm font-semibold text-gray-900">{user?.name || 'Admin'}</p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                {user?.name?.charAt(0) || 'A'}
-              </div>
+              {user?.profilePicture ? (
+                <img 
+                  src={user.profilePicture.startsWith('http') ? user.profilePicture : `${import.meta.env.VITE_APP_URL}${user.profilePicture}`} 
+                  alt={user.name || 'Admin'} 
+                  className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  {user?.name?.charAt(0) || 'A'}
+                </div>
+              )}
             </div>
           </div>
         </header>

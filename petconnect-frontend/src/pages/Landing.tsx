@@ -32,7 +32,7 @@ export default function Landing() {
               </Link>
               <Link
                 to="/register"
-                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-teal-600 text-white rounded-lg font-medium hover:shadow-lg transition-all whitespace-nowrap"
               >
                 Sign Up
               </Link>

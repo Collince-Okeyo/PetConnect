@@ -23,12 +23,26 @@ app.use(limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3005',
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:4173'
-  ],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:3005',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:4173'
+    ];
+    
+    // Allow any local network IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const localNetworkRegex = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || localNetworkRegex.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all in development
+    }
+  },
   credentials: true
 }));
 
@@ -116,16 +130,29 @@ const { socketAuth, setupMessageSocket } = require('./src/sockets/messageSocket'
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3005',
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://localhost:4173'
-    ],
-    credentials: true
+    origin: function(origin, callback) {
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        process.env.FRONTEND_URL || 'http://localhost:3005',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://192.168.100.174:3000',
+        'http://192.168.100.174:5173',
+      ];
+      
+      const localNetworkRegex = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):\d+$/;
+      
+      if (allowedOrigins.indexOf(origin) !== -1 || localNetworkRegex.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200
   }
 });
-
 // Socket.io authentication
 io.use(socketAuth);
 
@@ -135,8 +162,9 @@ setupMessageSocket(io);
 // Make io accessible to routes
 app.set('io', io);
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔌 Socket.io is ready for real-time messaging`);
+  console.log(`🌐 Accessible on network at http://0.0.0.0:${PORT}`);
 });

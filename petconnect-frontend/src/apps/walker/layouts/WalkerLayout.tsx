@@ -1,13 +1,13 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import {
   LayoutDashboard,
-  Inbox,
-  TrendingUp,
-  Calendar,
   Dog,
-  DollarSign,
+  Inbox,
+  MapPin,
+  CreditCard,
   Star,
   MessageSquare,
   User,
@@ -15,9 +15,9 @@ import {
   LogOut,
   Menu,
   Search,
-  Clock
+  Wallet,
+  TrendingUp
 } from 'lucide-react'
-import { useState } from 'react'
 import NotificationBell from '../../../components/NotificationBell'
 
 interface WalkerLayoutProps {
@@ -38,9 +38,10 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/walker/dashboard' },
     { icon: Inbox, label: 'Walk Requests', path: '/walker/requests' },
-    { icon: TrendingUp, label: 'Active Walks', path: '/walker/active' },
-    { icon: Calendar, label: 'My Schedule', path: '/walker/schedule' },
-    { icon: DollarSign, label: 'Earnings', path: '/walker/earnings' },
+    { icon: TrendingUp, label: 'My Walks', path: '/walker/my-walks' },
+    { icon: MapPin, label: 'Active Walks', path: '/walker/active-walks' },
+    { icon: Wallet, label: 'Earnings', path: '/walker/earnings' },
+    { icon: CreditCard, label: 'Wallet', path: '/walker/wallet' },
     { icon: Star, label: 'Reviews', path: '/walker/reviews' },
     { icon: MessageSquare, label: 'Messages', path: '/walker/messages' },
     { icon: User, label: 'Profile', path: '/walker/profile' },
@@ -133,12 +134,20 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
             <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.name || 'Pet Walker'}</p>
-                <p className="text-xs text-gray-500">Pet Walker</p>
+                <p className="text-sm font-semibold text-gray-900">{user?.name || 'Walker'}</p>
+                <p className="text-xs text-gray-500">Dog Walker</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
-                {user?.name?.charAt(0) || 'W'}
-              </div>
+              {user?.profilePicture ? (
+                <img 
+                  src={user.profilePicture.startsWith('http') ? user.profilePicture : `${import.meta.env.VITE_APP_URL}${user.profilePicture}`} 
+                  alt={user.name || 'Walker'} 
+                  className="w-10 h-10 rounded-full object-cover border-2 border-teal-200"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  {user?.name?.charAt(0) || 'W'}
+                </div>
+              )}
             </div>
           </div>
         </header>

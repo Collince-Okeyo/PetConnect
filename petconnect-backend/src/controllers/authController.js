@@ -717,13 +717,22 @@ const logout = async (req, res) => {
 
     // Blacklist the access token
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      await BlacklistedToken.create({
-        token,
-        userId: decoded.id,
-        reason: 'logout',
-        expiresAt: new Date(decoded.exp * 1000)
-      });
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Check if token is already blacklisted
+        const existingBlacklist = await BlacklistedToken.findOne({ token });
+        if (!existingBlacklist) {
+          await BlacklistedToken.create({
+            token,
+            userId: decoded.id,
+            reason: 'logout',
+            expiresAt: new Date(decoded.exp * 1000)
+          });
+        }
+      } catch (tokenError) {
+        // Token might be invalid or already blacklisted, continue with logout
+        console.log('Token blacklist error (non-critical):', tokenError.message);
+      }
     }
 
     // Remove refresh token if provided

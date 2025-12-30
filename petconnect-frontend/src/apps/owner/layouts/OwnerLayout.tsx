@@ -1,4 +1,5 @@
-import { ReactNode, useState } from 'react'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import {
@@ -136,9 +137,17 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
                 <p className="text-sm font-semibold text-gray-900">{user?.name || 'Pet Owner'}</p>
                 <p className="text-xs text-gray-500">Pet Owner</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-                {user?.name?.charAt(0) || 'P'}
-              </div>
+              {user?.profilePicture ? (
+                <img 
+                  src={user.profilePicture.startsWith('http') ? user.profilePicture : `${import.meta.env.VITE_APP_URL}${user.profilePicture}`} 
+                  alt={user.name || 'Pet Owner'} 
+                  className="w-10 h-10 rounded-full object-cover border-2 border-purple-200"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  {user?.name?.charAt(0) || 'P'}
+                </div>
+              )}
             </div>
           </div>
         </header>
