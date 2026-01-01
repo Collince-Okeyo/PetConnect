@@ -13,7 +13,8 @@ const {
   completeWalk,
   cancelWalkByOwner,
   updateWalkLocation,
-  getWalkLocation
+  getWalkLocation,
+  getWalkerMyWalks
 } = require('../controllers/walkController');
 
 // @route   GET /api/walks/walkers/available
@@ -25,6 +26,11 @@ router.get('/walkers/available', protect, getAvailableWalkers);
 // @desc    Create walk booking
 // @access  Private/Owner
 router.post('/book', protect, authorize('owner'), createWalkBooking);
+
+// @route   GET /api/walks/walker/my-walks
+// @desc    Get walker's walk history with pagination and filters
+// @access  Private/Walker
+router.get('/walker/my-walks', protect, authorize('walker'), getWalkerMyWalks);
 
 // @route   GET /api/walks/my-walks
 // @desc    Get user's walks

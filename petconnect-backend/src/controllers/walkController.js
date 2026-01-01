@@ -902,6 +902,109 @@ const getWalkLocation = async (req, res) => {
   }
 };
 
+// @desc    Get walker's walk history with pagination and filters
+// @route   GET /api/walks/walker/my-walks
+// @access  Private/Walker
+const getWalkerMyWalks = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, search } = req.query;
+    
+    // Build query - only walks assigned to this walker
+    let query = { walker: req.user.id };
+    
+    // Filter by status (completed or cancelled)
+    if (status && status !== 'all') {
+      query.status = status;
+    } else {
+      // By default, show only completed and cancelled walks
+      query.status = { $in: ['completed', 'cancelled'] };
+    }
+    
+    // Search functionality
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      
+      // Find pets, owners that match search
+      const pets = await require('../models/Pet').find({
+        name: searchRegex
+      }).select('_id');
+      
+      const owners = await User.find({
+        name: searchRegex
+      }).select('_id');
+      
+      // Add search conditions
+      query.$or = [
+        { pet: { $in: pets.map(p => p._id) } },
+        { owner: { $in: owners.map(o => o._id) } },
+        { pickupLocation: searchRegex },
+        { dropoffLocation: searchRegex }
+      ];
+    }
+    
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+    
+    // Get total count for pagination
+    const total = await Walk.countDocuments(query);
+    
+    // Fetch walks
+    const walks = await Walk.find(query)
+      .populate('pet', 'name petType photos')
+      .populate({
+        path: 'pet',
+        populate: {
+          path: 'petType',
+          select: 'name icon'
+        }
+      })
+      .populate('owner', 'name email phone profilePicture')
+      .sort({ scheduledStartTime: -1 })
+      .skip(skip)
+      .limit(limitNum);
+    
+    // Calculate statistics
+    const statsQuery = { walker: req.user.id };
+    const totalWalks = await Walk.countDocuments(statsQuery);
+    const completedWalks = await Walk.countDocuments({ ...statsQuery, status: 'completed' });
+    const cancelledWalks = await Walk.countDocuments({ ...statsQuery, status: 'cancelled' });
+    
+    // Calculate total earnings from completed walks
+    const earningsResult = await Walk.aggregate([
+      { $match: { walker: require('mongoose').Types.ObjectId(req.user.id), status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$price' } } }
+    ]);
+    const totalEarnings = earningsResult.length > 0 ? earningsResult[0].total : 0;
+    
+    res.json({
+      success: true,
+      data: {
+        walks,
+        stats: {
+          total: totalWalks,
+          completed: completedWalks,
+          cancelled: cancelledWalks,
+          totalEarnings
+        },
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+          totalItems: total,
+          itemsPerPage: limitNum
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get walker my walks error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching walk history'
+    });
+  }
+};
+
 module.exports = {
   getAvailableWalkers,
   createWalkBooking,
@@ -914,5 +1017,6 @@ module.exports = {
   completeWalk,
   cancelWalkByOwner,
   updateWalkLocation,
-  getWalkLocation
+  getWalkLocation,
+  getWalkerMyWalks
 };
