@@ -36,6 +36,7 @@ import OwnerProfile from './apps/owner/pages/Profile'
 // Walker App
 import WalkerDashboard from './apps/walker/pages/Dashboard'
 import WalkerRequests from './apps/walker/pages/Requests'
+import WalkerMyWalks from './apps/walker/pages/MyWalks'
 import WalkerActiveWalks from './apps/walker/pages/ActiveWalks'
 import WalkerSchedule from './apps/walker/pages/Schedule'
 import WalkerEarnings from './apps/walker/pages/Earnings'
@@ -109,7 +110,8 @@ function App() {
           <Route path="/walker" element={<Navigate to="/walker/dashboard" replace />} />
           <Route path="/walker/dashboard" element={<WalkerDashboard />} />
           <Route path="/walker/requests" element={<WalkerRequests />} />
-          <Route path="/walker/active" element={<WalkerActiveWalks />} />
+          <Route path="/walker/my-walks" element={<WalkerMyWalks />} />
+          <Route path="/walker/active-walks" element={<WalkerActiveWalks />} />
           <Route path="/walker/schedule" element={<WalkerSchedule />} />
           <Route path="/walker/earnings" element={<WalkerEarnings />} />
           <Route path="/walker/reviews" element={<WalkerReviews />} />

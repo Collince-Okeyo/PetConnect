@@ -118,7 +118,7 @@ export default function WalkerDashboard() {
 
         {/* Today's Schedule */}
         <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Today's Schedule</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 ">Today's Schedule</h2>
           <div className="space-y-3">
             <ScheduleItem
               time="3:00 PM"
@@ -249,29 +249,29 @@ interface ScheduleItemProps {
 
 function ScheduleItem({ time, petName, ownerName, duration, location, status }: ScheduleItemProps) {
   return (
-    <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-300 transition-all">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-300 transition-all">
       <div className="flex-shrink-0">
-        <div className="w-16 h-16 bg-teal-100 rounded-lg flex flex-col items-center justify-center">
+        <div className="w-20 h-20 bg-teal-100 rounded-lg flex flex-col items-center justify-center p-2">
           <span className="text-xs text-teal-600 font-medium">Today</span>
           <span className="text-lg font-bold text-teal-600">{time}</span>
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <h4 className="font-semibold text-gray-900">{petName}'s Walk</h4>
         <p className="text-sm text-gray-600">with {ownerName}</p>
-        <div className="flex items-center gap-3 mt-1">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
           <span className="text-xs text-gray-500 flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {duration}
           </span>
-          <span className="text-xs text-gray-500 flex items-center gap-1">
+          <span className="text-xs text-gray-500 flex items-center gap-1 truncate">
             <MapPin className="w-3 h-3" />
-            {location}
+            <span className="truncate">{location}</span>
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-medium flex items-center gap-1">
+      <div className="flex items-center sm:flex-shrink-0">
+        <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-medium flex items-center gap-1 whitespace-nowrap">
           <CheckCircle className="w-3 h-3" />
           {status}
         </span>
