@@ -80,7 +80,7 @@ export default function AddPetModal({ isOpen, onClose, onSuccess, mode = 'add', 
       })
       // Set existing image preview
       if (pet.photos && pet.photos.length > 0) {
-        setImagePreview(`http://localhost:5000/${pet.photos[0].url}`)
+        setImagePreview(import.meta.env.VITE_APP_URL + pet.photos[0].url)
       }
     }
   }, [mode, pet, petTypes, loadingData])

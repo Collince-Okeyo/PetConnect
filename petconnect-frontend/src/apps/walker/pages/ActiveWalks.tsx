@@ -304,7 +304,7 @@ export default function ActiveWalks() {
             <div className="flex items-center gap-4">
               {activeWalk.owner.profilePicture ? (
                 <img
-                  src={`http://localhost:5000/${activeWalk.owner.profilePicture}`}
+                  src={import.meta.env.VITE_APP_URL + activeWalk.owner.profilePicture}
                   alt={activeWalk.owner.name}
                   className="w-12 h-12 rounded-full object-cover"
                 />

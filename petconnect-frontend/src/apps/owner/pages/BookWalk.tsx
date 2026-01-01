@@ -374,7 +374,7 @@ interface WalkerCardProps {
 
 function WalkerCard({ walker, isSelected, onSelect }: WalkerCardProps) {
   const profileImage = walker.profilePicture 
-    ? `http://localhost:5000/${walker.profilePicture}` 
+    ? import.meta.env.VITE_APP_URL + walker.profilePicture 
     : null
   return (
     <div className={`flex items-center gap-4 p-4 border-2 rounded-lg transition-all cursor-pointer ${

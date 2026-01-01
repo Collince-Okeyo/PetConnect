@@ -27,7 +27,10 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // Check if screen is desktop size (1024px+)
+    return typeof window !== 'undefined' && window.innerWidth >= 1024
+  })
 
   const handleLogout = async () => {
     await logout()
@@ -50,10 +53,18 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full bg-gradient-to-b from-purple-600 to-pink-600 text-white transition-all duration-300 z-40 ${
-          sidebarOpen ? 'w-64' : 'w-20'
+          sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
         }`}
       >
         {/* Logo */}
@@ -107,13 +118,9 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div
-        className={`transition-all duration-300 ${
-          sidebarOpen ? 'ml-64' : 'ml-20'
-        }`}
-      >
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
         {/* Top Bar */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -121,7 +128,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
             >
               <Menu className="w-5 h-5 text-gray-600" />
             </button>
-            <div className="relative">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
@@ -133,7 +140,7 @@ export default function OwnerLayout({ children }: OwnerLayoutProps) {
           <div className="flex items-center gap-4">
             <NotificationBell />
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-              <div className="text-right">
+              <div className="text-right hidden md:block">
                 <p className="text-sm font-semibold text-gray-900">{user?.name || 'Pet Owner'}</p>
                 <p className="text-xs text-gray-500">Pet Owner</p>
               </div>

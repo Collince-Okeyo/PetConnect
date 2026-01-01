@@ -252,7 +252,7 @@ interface PetCardProps {
 
 function PetCard({ pet, onEdit, onDelete, onBookWalk }: PetCardProps) {
   const petImage = pet.photos && pet.photos.length > 0 
-    ? `http://localhost:5000/${pet.photos[0].url}`
+    ? import.meta.env.VITE_APP_URL + pet.photos[0].url
     : null
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">

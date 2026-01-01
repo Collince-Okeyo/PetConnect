@@ -37,7 +37,7 @@ interface PetDetailsModalProps {
 
 export default function PetDetailsModal({ pet, onClose }: PetDetailsModalProps) {
   const petImage = pet.photos && pet.photos.length > 0
-    ? `http://localhost:5000/${pet.photos[0].url}`
+    ? import.meta.env.VITE_APP_URL + pet.photos[0].url
     : pet.petType.icon
 
   const formatDate = (dateString: string) => {

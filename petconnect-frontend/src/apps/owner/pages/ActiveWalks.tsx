@@ -232,7 +232,7 @@ console.log('Data: ', locationData)
             <div className="flex items-center gap-4">
               {activeWalk.walker.profilePicture ? (
                 <img
-                  src={`http://localhost:5000/${activeWalk.walker.profilePicture}`}
+                  src={import.meta.env.VITE_APP_URL + activeWalk.walker.profilePicture}
                   alt={activeWalk.walker.name}
                   className="w-12 h-12 rounded-full object-cover"
                 />

@@ -364,7 +364,7 @@ function RequestCard({ walk, onAccept, onDecline, onStart, onComplete, isProcess
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
   const petIcon = walk.pet.photos && walk.pet.photos.length > 0
-    ? `http://localhost:5000/${walk.pet.photos[0].url}`
+    ? import.meta.env.VITE_APP_URL + walk.pet.photos[0].url
     : walk.pet.petType.icon
 
   return (

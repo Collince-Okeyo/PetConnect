@@ -422,9 +422,8 @@ function PetCard({ pet, onViewDetails, onEdit, onDelete }: PetCardProps) {
     setShowMenu(false)
   }
   const petImage = pet.photos && pet.photos.length > 0
-    ? `http://localhost:5000/${pet.photos[0].url}`
+    ? import.meta.env.VITE_APP_URL + pet.photos[0].url
     : pet.petType.icon
-
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
       <div className="flex items-start justify-between mb-4">

@@ -389,7 +389,7 @@ export default function Messages() {
                   <div className="flex items-center gap-3">
                     {chatUser.profilePicture ? (
                       <img
-                        src={`http://localhost:5000/${chatUser.profilePicture}`}
+                        src={import.meta.env.VITE_APP_URL + chatUser.profilePicture}
                         alt={chatUser.name}
                         className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-100"
                       />
@@ -565,7 +565,7 @@ function ChatItem({ name, lastMessage, time, unread, active, onClick, profilePic
       <div className="flex items-center gap-3">
         {profilePicture ? (
           <img
-            src={`http://localhost:5000/${profilePicture}`}
+            src={import.meta.env.VITE_APP_URL + profilePicture}
             alt={name}
             className="w-12 h-12 rounded-full object-cover flex-shrink-0"
           />
@@ -614,14 +614,14 @@ function MessageBubble({ message, time, sent, isRead, attachments }: MessageBubb
               <div key={idx}>
                 {att.type === 'image' ? (
                   <img
-                    src={`http://localhost:5000/${att.url}`}
+                    src={import.meta.env.VITE_APP_URL + att.url}
                     alt={att.filename}
                     className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-md"
-                    onClick={() => window.open(`http://localhost:5000/${att.url}`, '_blank')}
+                    onClick={() => window.open(import.meta.env.VITE_APP_URL + att.url, '_blank')}
                   />
                 ) : (
                   <a
-                    href={`http://localhost:5000/${att.url}`}
+                    href={import.meta.env.VITE_APP_URL + att.url}
                     download={att.filename}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
                       sent
