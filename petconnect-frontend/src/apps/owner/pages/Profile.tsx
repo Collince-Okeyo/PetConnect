@@ -207,6 +207,7 @@ export default function Profile() {
                       name={pet.name}
                       breed={pet.breed}
                       age={`${pet.age} years`}
+                      petPhoto={pet.photos[0].url}
                     />
                   ))}
                 </div>
@@ -259,13 +260,18 @@ interface PetCardProps {
   name: string
   breed: string
   age: string
+  petPhoto: string
 }
 
-function PetCard({ name, breed, age }: PetCardProps) {
+function PetCard({ name, breed, age, petPhoto }: PetCardProps) {
   return (
     <div className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 transition-colors">
       <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl mb-2">
-        🐕
+        {petPhoto ? (
+          <img src={petPhoto.startsWith('http') ? petPhoto : import.meta.env.VITE_APP_URL + petPhoto} alt={name} className="w-full h-full object-cover rounded-full" />
+        ) : (
+          <p className="text-gray-600">{name.charAt(0)}</p>
+        )}
       </div>
       <h4 className="font-semibold text-gray-900">{name}</h4>
       <p className="text-sm text-gray-600">{breed}</p>

@@ -12,7 +12,6 @@ export default function Profile() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
   useEffect(() => {
     fetchProfileData()
   }, [])
@@ -269,6 +268,7 @@ interface InfoItemProps {
 }
 
 function InfoItem({ label, value }: InfoItemProps) {
+
   return (
     <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
       <span className="text-sm text-gray-600">{label}</span>
