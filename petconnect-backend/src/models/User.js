@@ -66,6 +66,69 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // ID Verification (Enhanced)
+  idVerification: {
+    nationalIdNumber: {
+      type: String,
+      default: null
+    },
+    idFrontImage: {
+      type: String,
+      default: null
+    },
+    idBackImage: {
+      type: String,
+      default: null
+    },
+    submittedAt: {
+      type: Date,
+      default: null
+    }
+  },
+  // Selfie Verification
+  selfieVerification: {
+    selfieImage: {
+      type: String,
+      default: null
+    },
+    selfieWithIdImage: {
+      type: String,
+      default: null
+    },
+    submittedAt: {
+      type: Date,
+      default: null
+    }
+  },
+  // Admin Approval
+  adminApproval: {
+    status: {
+      type: String,
+      enum: ['pending', 'under_review', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    reviewedAt: {
+      type: Date,
+      default: null
+    },
+    reviewNotes: {
+      type: String,
+      default: null
+    },
+    rejectionReason: {
+      type: String,
+      default: null
+    },
+    approvalDate: {
+      type: Date,
+      default: null
+    }
+  },
   certifications: [{
     name: String,
     image: String,

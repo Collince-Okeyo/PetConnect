@@ -30,7 +30,7 @@ export default function FindWalkers() {
       }
 
       const response = await api.get('/walks/walkers/available', { params })
-      
+      console.log(response.data)
       if (response.data.success) {
         setWalkers(response.data.data.walkers || [])
       }
@@ -123,9 +123,9 @@ export default function FindWalkers() {
                 id={walker._id}
                 name={walker.name}
                 profilePicture={walker.profilePicture}
-                rating={walker.rating?.toFixed(1) || '0.0'}
+                rating={Number(walker.rating || 0).toFixed(1)}
                 reviews={walker.totalReviews?.toString() || '0'}
-                distance={walker.distance ? `${walker.distance.toFixed(1)} km` : 'N/A'}
+                distance={walker.distance ? `${Number(walker.distance).toFixed(1)} km` : 'N/A'}
                 experience={walker.experience || 'New'}
                 price={`KES ${walker.hourlyRate || 500}`}
                 availability={walker.isAvailable ? 'Available Today' : 'Busy'}

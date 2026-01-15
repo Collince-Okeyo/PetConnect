@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { setAuthToken } from '../lib/api'
 import * as auth from '../lib/authClient'
 import type { AuthTokens, UserProfile } from '../types/auth'
+import heartbeatService from '../lib/heartbeatService'
 
 type AuthState = {
   user: UserProfile | null
@@ -62,6 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const nextUser = res.data?.user ?? null
     const nextTokens = res.data?.tokens ?? null
     setAuth(nextUser, nextTokens)
+    
+    // Start heartbeat service for all user roles
+    heartbeatService.start()
   }, [setAuth])
 
   const register = useCallback(async (params: Record<string, unknown>) => {
@@ -75,12 +79,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!tokens?.refreshToken) return
     const res = await auth.refreshToken({ refreshToken: tokens.refreshToken })
     const nextTokens = res.data?.tokens ?? null
-    setAuth(user, nextTokens)
+    if (nextTokens) setAuth(user, nextTokens)
   }, [tokens, user, setAuth])
 
   const logout = useCallback(async () => {
     try {
-      if (tokens?.refreshToken) await auth.logout({ refreshToken: tokens.refreshToken })
+      // Stop heartbeat service
+      heartbeatService.stop()
+      
+      // Call logout with refreshToken if available
+      if (tokens?.refreshToken) {
+        await auth.logout({ refreshToken: tokens.refreshToken })
+      }
     } finally {
       setAuth(null, null)
     }

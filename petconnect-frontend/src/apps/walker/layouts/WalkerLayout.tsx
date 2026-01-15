@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
 import {
@@ -20,6 +20,8 @@ import {
   TrendingUp
 } from 'lucide-react'
 import NotificationBell from '../../../components/NotificationBell'
+import VerificationBanner from '../../../components/VerificationBanner'
+import { getVerificationStatus } from '../../../lib/verificationClient'
 
 interface WalkerLayoutProps {
   children: ReactNode
@@ -33,6 +35,22 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
     // Check if screen is desktop size (1024px+)
     return typeof window !== 'undefined' && window.innerWidth >= 1024
   })
+  const [verificationStatus, setVerificationStatus] = useState<any>(null)
+  const [isVerified, setIsVerified] = useState(false)
+
+  useEffect(() => {
+    loadVerificationStatus()
+  }, [])
+
+  const loadVerificationStatus = async () => {
+    try {
+      const response = await getVerificationStatus()
+      setVerificationStatus(response.data)
+      setIsVerified(response.data.adminApproval.status === 'approved')
+    } catch (error) {
+      console.error('Error loading verification status:', error)
+    }
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -41,11 +59,11 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/walker/dashboard' },
-    { icon: Inbox, label: 'Walk Requests', path: '/walker/requests' },
-    { icon: TrendingUp, label: 'My Walks', path: '/walker/my-walks' },
-    { icon: MapPin, label: 'Active Walks', path: '/walker/active-walks' },
-    { icon: Calendar, label: 'Schedule', path: '/walker/schedule' },
-    { icon: Wallet, label: 'Earnings', path: '/walker/earnings' },
+    { icon: Inbox, label: 'Walk Requests', path: '/walker/requests', requiresVerification: true },
+    { icon: TrendingUp, label: 'My Walks', path: '/walker/my-walks', requiresVerification: true },
+    { icon: MapPin, label: 'Active Walks', path: '/walker/active-walks', requiresVerification: true },
+    { icon: Calendar, label: 'Schedule', path: '/walker/schedule', requiresVerification: true },
+    { icon: Wallet, label: 'Earnings', path: '/walker/earnings', requiresVerification: true },
     { icon: Star, label: 'Reviews', path: '/walker/reviews' },
     { icon: MessageSquare, label: 'Messages', path: '/walker/messages' },
     { icon: User, label: 'Profile', path: '/walker/profile' },
@@ -89,18 +107,34 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
           {menuItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
+            const isRestricted = item.requiresVerification && !isVerified
+            
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                to={isRestricted ? '#' : item.path}
+                onClick={(e) => {
+                  if (isRestricted) {
+                    e.preventDefault()
+                    navigate('/verification')
+                  }
+                }}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg mb-1 transition-all ${
                   isActive
                     ? 'bg-white text-teal-600 shadow-lg'
+                    : isRestricted
+                    ? 'text-teal-300 cursor-not-allowed opacity-60'
                     : 'text-teal-100 hover:bg-teal-500'
                 }`}
+                title={isRestricted ? 'Verification required' : ''}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
                 {sidebarOpen && <span className="font-medium">{item.label}</span>}
+                {isRestricted && sidebarOpen && (
+                  <span className="ml-auto text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
+                    🔒
+                  </span>
+                )}
               </Link>
             )
           })}
@@ -162,6 +196,13 @@ export default function WalkerLayout({ children }: WalkerLayoutProps) {
 
         {/* Page Content */}
         <main className="p-6">
+          {/* Verification Banner */}
+          {verificationStatus && verificationStatus.adminApproval.status !== 'approved' && (
+            <VerificationBanner
+              status={verificationStatus.adminApproval.status}
+              rejectionReason={verificationStatus.adminApproval.rejectionReason}
+            />
+          )}
           {children}
         </main>
       </div>

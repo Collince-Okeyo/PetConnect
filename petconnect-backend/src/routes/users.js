@@ -11,6 +11,7 @@ const {
   uploadProfilePicture,
   deleteAccount
 } = require('../controllers/userController');
+const { heartbeat } = require('../controllers/heartbeatController');
 const { protect } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 
@@ -73,5 +74,10 @@ router.post('/upload-picture', protect, upload.single('profilePicture'), uploadP
 // @desc    Delete user account
 // @access  Private
 router.delete('/delete', protect, deleteAccount);
+
+// @route   POST /api/users/heartbeat
+// @desc    Update user heartbeat (keep alive)
+// @access  Private
+router.post('/heartbeat', protect, heartbeat);
 
 module.exports = router;

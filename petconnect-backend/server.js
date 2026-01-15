@@ -6,6 +6,9 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
 
+// Import cleanup service
+const onlineStatusCleanup = require('./src/services/onlineStatusCleanup');
+
 const app = express();
 
 // Security middleware
@@ -80,6 +83,9 @@ app.get('/', (req, res) => {
   });
 });
 
+// Serve static files from uploads directory
+app.use('/app/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Health check route
 app.get('/health', (req, res) => {
   res.json({
@@ -99,6 +105,8 @@ app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/walks', require('./src/routes/walks'));
 app.use('/api/notifications', require('./src/routes/notifications'));
 app.use('/api/messages', require('./src/routes/messages'));
+app.use('/api/verification', require('./src/routes/verification'));
+app.use('/api/admin/verifications', require('./src/routes/adminVerification'));
 // app.use('/api/payments', require('./src/routes/payments'));
 
 // Error handling middleware
@@ -167,4 +175,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔌 Socket.io is ready for real-time messaging`);
   console.log(`🌐 Accessible on network at http://0.0.0.0:${PORT}`);
+  
+  // Start online status cleanup service
+  onlineStatusCleanup.start();
 });

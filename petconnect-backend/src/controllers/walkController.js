@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Walk = require('../models/Walk');
 const Pet = require('../models/Pet');
 const User = require('../models/User');
@@ -973,7 +974,7 @@ const getWalkerMyWalks = async (req, res) => {
     
     // Calculate total earnings from completed walks
     const earningsResult = await Walk.aggregate([
-      { $match: { walker: require('mongoose').Types.ObjectId(req.user.id), status: 'completed' } },
+      { $match: { walker: new mongoose.Types.ObjectId(req.user.id), status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$price' } } }
     ]);
     const totalEarnings = earningsResult.length > 0 ? earningsResult[0].total : 0;

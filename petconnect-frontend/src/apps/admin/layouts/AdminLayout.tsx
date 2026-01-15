@@ -15,6 +15,7 @@ import {
   Menu,
   Search,
   User,
+  Shield,
 } from 'lucide-react'
 import { useState } from 'react'
 import NotificationBell from '../../../components/NotificationBell'
@@ -45,6 +46,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: CreditCard, label: 'Payments', path: '/admin/payments' },
     { icon: Star, label: 'Ratings', path: '/admin/ratings' },
     { icon: MessageSquare, label: 'Complaints', path: '/admin/complaints' },
+    { icon: Shield, label: 'Verifications', path: '/admin/verifications' },
     { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
     { icon: User, label: 'Profile', path: '/admin/profile' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },

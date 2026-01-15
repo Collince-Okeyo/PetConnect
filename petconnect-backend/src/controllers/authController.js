@@ -201,8 +201,9 @@ const login = async (req, res) => {
       });
     }
 
-    // Update last seen
+    // Update last seen and set online status
     user.lastSeen = new Date();
+    user.isOnline = true;  // Set user as online
     await user.save();
 
     // Get device info and create session
@@ -744,6 +745,11 @@ const logout = async (req, res) => {
     if (req.sessionId) {
       await req.user.removeActiveSession(req.sessionId);
     }
+
+    // Set user as offline
+    req.user.isOnline = false;
+    req.user.lastSeen = new Date();
+    await req.user.save();
 
     res.json({
       success: true,

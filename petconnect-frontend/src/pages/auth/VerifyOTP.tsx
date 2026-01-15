@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Dog, Mail, Phone, CheckCircle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { verifyPhoneOTP, verifyEmailOTP, resendPhoneOTP, resendEmailOTP } from '../../lib/authClient'
+
 
 export default function VerifyOTP() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   
   const [step, setStep] = useState<'phone' | 'email' | 'complete'>('phone')
   const [phoneOTP, setPhoneOTP] = useState(['', '', '', '', '', ''])
@@ -12,6 +16,13 @@ export default function VerifyOTP() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resendTimer, setResendTimer] = useState(60)
+
+  // Redirect if no user (not registered/logged in)
+  useEffect(() => {
+    if (!user) {
+      navigate('/register')
+    }
+  }, [user, navigate])
 
   // Countdown timer for resend
   useEffect(() => {
@@ -57,10 +68,14 @@ export default function VerifyOTP() {
       return
     }
 
+    if (!user?.id) {
+      setError('User session not found. Please register again.')
+      return
+    }
+
     setLoading(true)
     try {
-      // TODO: Implement phone OTP verification API call
-      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate API call
+      await verifyPhoneOTP({ userId: user.id, otp })
       setStep('email')
       setResendTimer(60) // Reset timer for email OTP
     } catch (err: any) {
@@ -69,6 +84,8 @@ export default function VerifyOTP() {
       setLoading(false)
     }
   }
+
+
 
   const handleVerifyEmail = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -80,12 +97,17 @@ export default function VerifyOTP() {
       return
     }
 
+    if (!user?.id) {
+      setError('User session not found. Please register again.')
+      return
+    }
+
     setLoading(true)
     try {
-      // TODO: Implement email OTP verification API call
-      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulate API call
+      await verifyEmailOTP({ userId: user.id, otp })
       setStep('complete')
-      setTimeout(() => navigate('/dashboard'), 2000)
+      // Redirect to login so user can login and complete document verification
+      setTimeout(() => navigate('/login'), 2000)
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Invalid OTP. Please try again.')
     } finally {
@@ -95,14 +117,24 @@ export default function VerifyOTP() {
 
   const handleResend = async (type: 'phone' | 'email') => {
     setError(null)
+
+    if (!user?.id) {
+      setError('User session not found. Please register again.')
+      return
+    }
+
     try {
-      // TODO: Implement resend OTP API call
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      if (type === 'phone') {
+        await resendPhoneOTP({ userId: user.id })
+      } else {
+        await resendEmailOTP({ userId: user.id })
+      }
       setResendTimer(60)
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to resend OTP')
     }
   }
+
 
   if (step === 'complete') {
     return (

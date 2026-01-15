@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import VerifyOTP from './pages/auth/VerifyOTP'
+import Verification from './pages/Verification'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import ProtectedRoute from './components/routes/ProtectedRoute'
@@ -19,6 +20,8 @@ import AdminComplaints from './apps/admin/pages/Complaints'
 import AdminAnalytics from './apps/admin/pages/Analytics'
 import AdminSettings from './apps/admin/pages/Settings'
 import AdminProfile from './apps/admin/pages/Profile'
+import AdminVerifications from './apps/admin/pages/Verifications'
+import AdminVerificationDetail from './apps/admin/pages/VerificationDetail'
 
 // Owner App
 import OwnerDashboard from './apps/owner/pages/Dashboard'
@@ -71,6 +74,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify" element={<VerifyOTP />} />
+        <Route path="/verification" element={<Verification />} />
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -87,6 +91,8 @@ function App() {
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/verifications" element={<AdminVerifications />} />
+          <Route path="/admin/verifications/:userId" element={<AdminVerificationDetail />} />
         </Route>
 
         {/* Owner Routes */}

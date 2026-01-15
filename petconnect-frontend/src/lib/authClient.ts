@@ -48,4 +48,24 @@ export async function facebookLogin(accessToken: string) {
   return data
 }
 
+export async function verifyPhoneOTP(payload: { userId: string; otp: string }) {
+  const { data } = await api.post<AuthResponse>(`${AUTH}/verify-phone`, payload)
+  return data
+}
+
+export async function verifyEmailOTP(payload: { userId: string; otp: string }) {
+  const { data } = await api.post<AuthResponse>(`${AUTH}/verify-email-otp`, payload)
+  return data
+}
+
+export async function resendPhoneOTP(payload: { userId: string }) {
+  const { data } = await api.post<AuthResponse>(`${AUTH}/resend-phone-otp`, payload)
+  return data
+}
+
+export async function resendEmailOTP(payload: { userId: string }) {
+  const { data } = await api.post<AuthResponse>(`${AUTH}/resend-email-otp`, payload)
+  return data
+}
+
 

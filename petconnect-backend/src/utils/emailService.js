@@ -612,6 +612,245 @@ const sendWalkCancelledEmail = async (walk, walker) => {
   }
 };
 
+// Send verification approved email
+const sendVerificationApprovedEmail = async (email, name) => {
+  try {
+    if (!hasApiKey) {
+      console.log('\n✅ VERIFICATION APPROVED EMAIL (Development Mode):');
+      console.log(`To: ${email}`);
+      console.log(`Name: ${name}`);
+      console.log('---\n');
+      return { success: true, message: 'Verification approved email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [email],
+      subject: '✅ Your PetConnect Account Has Been Verified!',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .feature { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #10b981; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🎉 Account Verified!</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${name},</h2>
+              <p>Great news! Your PetConnect account has been verified and approved by our admin team.</p>
+              
+              <p><strong>You can now access all features of the platform:</strong></p>
+              
+              <div class="feature">
+                <strong>🐕 Add and Manage Pets</strong>
+                <p>Add your furry friends and keep their information up to date.</p>
+              </div>
+              
+              <div class="feature">
+                <strong>🚶 Book Dog Walking Services</strong>
+                <p>Find trusted walkers and schedule walks at your convenience.</p>
+              </div>
+              
+              <div class="feature">
+                <strong>💬 Message Walkers</strong>
+                <p>Communicate directly with walkers through our messaging system.</p>
+              </div>
+              
+              <div class="feature">
+                <strong>💳 Make Payments</strong>
+                <p>Pay securely through M-Pesa integration.</p>
+              </div>
+              
+              <p>Thank you for being part of the PetConnect community!</p>
+              
+              <p>Best regards,<br>The PetConnect Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send verification approved email', error: error.message };
+    }
+
+    console.log('✅ Verification approved email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send verification rejected email
+const sendVerificationRejectedEmail = async (email, name, reason) => {
+  try {
+    if (!hasApiKey) {
+      console.log('\n❌ VERIFICATION REJECTED EMAIL (Development Mode):');
+      console.log(`To: ${email}`);
+      console.log(`Name: ${name}`);
+      console.log(`Reason: ${reason}`);
+      console.log('---\n');
+      return { success: true, message: 'Verification rejected email logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [email],
+      subject: '❌ PetConnect Verification Update',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Verification Update</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${name},</h2>
+              <p>Unfortunately, we were unable to verify your account at this time.</p>
+              
+              <div class="warning-box">
+                <strong>⚠️ Reason for Rejection:</strong>
+                <p>${reason}</p>
+              </div>
+              
+              <p><strong>What to do next:</strong></p>
+              <ul>
+                <li>Review the reason above carefully</li>
+                <li>Ensure your documents are clear and readable</li>
+                <li>Make sure your ID matches your registration details</li>
+                <li>Resubmit your verification documents with the correct information</li>
+              </ul>
+              
+              <p>If you have any questions or need assistance, please contact our support team.</p>
+              
+              <p>Best regards,<br>The PetConnect Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send verification rejected email', error: error.message };
+    }
+
+    console.log('✅ Verification rejected email sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send admin notification when verification is submitted
+const sendAdminVerificationNotification = async (adminEmail, userName, userRole, userId) => {
+  try {
+    if (!hasApiKey) {
+      console.log('\n📧 ADMIN VERIFICATION NOTIFICATION (Development Mode):');
+      console.log(`To: ${adminEmail}`);
+      console.log(`User: ${userName} (${userRole})`);
+      console.log(`User ID: ${userId}`);
+      console.log('---\n');
+      return { success: true, message: 'Admin notification logged to console (dev mode)' };
+    }
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'PetConnect <onboarding@resend.dev>',
+      to: [adminEmail],
+      subject: '🔔 New Verification Submission - PetConnect',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔔 New Verification Submission</h1>
+            </div>
+            <div class="content">
+              <h2>Action Required</h2>
+              <p>A user has submitted their verification documents for review.</p>
+              
+              <div class="info-box">
+                <h3>User Details</h3>
+                <p><strong>Name:</strong> ${userName}</p>
+                <p><strong>Role:</strong> ${userRole}</p>
+                <p><strong>User ID:</strong> ${userId}</p>
+                <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+              </div>
+              
+              <p>Please review the submitted documents and approve or reject the verification.</p>
+              
+              <div style="text-align: center;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:3005'}/admin/verifications" class="button">Review Verification</a>
+              </div>
+              
+              <p>Best regards,<br>PetConnect System</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} PetConnect. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, message: 'Failed to send admin notification', error: error.message };
+    }
+
+    console.log('✅ Admin notification sent successfully');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   generateOTP,
   sendVerificationEmail,
@@ -621,5 +860,8 @@ module.exports = {
   sendWalkAcceptedEmail,
   sendWalkStartedEmail,
   sendWalkCompletedEmail,
-  sendWalkCancelledEmail
+  sendWalkCancelledEmail,
+  sendVerificationApprovedEmail,
+  sendVerificationRejectedEmail,
+  sendAdminVerificationNotification
 };
